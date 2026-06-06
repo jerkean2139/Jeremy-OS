@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Building2, Theater as TheaterIcon, Flame, Sunrise, Moon } from "lucide-react";
+import { Building2, Theater as TheaterIcon, Flame, Sunrise, Moon, Timer } from "lucide-react";
 import { HydrationGate } from "@/components/HydrationGate";
 import { MissionControl } from "@/components/dashboard/MissionControl";
 import { MountainCard } from "@/components/dashboard/MountainCard";
@@ -82,6 +82,20 @@ function Dashboard() {
           accent="text-sage-400"
         />
       </div>
+
+      {/* Pulse — 15-min awareness check */}
+      <Link
+        href="/pulse"
+        className="flex items-center gap-3 rounded-2xl border border-ink-700/60 bg-gradient-to-br from-sage-500/10 to-sky-500/5 p-4 transition-colors hover:border-ink-600"
+      >
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-ink-800/70">
+          <Timer className="h-5 w-5 text-sage-400" />
+        </div>
+        <div className="flex-1">
+          <div className="text-sm font-medium text-mist-100">Start a Pulse</div>
+          <div className="text-xs text-mist-500">15-min check: Mountain or Noise?</div>
+        </div>
+      </Link>
 
       {/* Quick actions */}
       <div className="grid grid-cols-2 gap-3">

@@ -2,8 +2,31 @@
 // they're easy to test and reuse across the dashboard, analytics page, and
 // the AI coach context.
 
-import { type DayEntry, type ElevatorLog, type TheaterLog } from "./types";
+import {
+  type DayEntry,
+  type ElevatorLog,
+  type TheaterLog,
+  type PulseEntry,
+  type PulseTag,
+} from "./types";
 import { todayKey } from "./utils";
+
+export function pulsesOn(logs: PulseEntry[], dateKey: string): PulseEntry[] {
+  return logs.filter((l) => startOfDayKey(l.timestamp) === dateKey);
+}
+
+export interface PulseSummary {
+  total: number;
+  byTag: Record<PulseTag, number>;
+  focusRatio: number; // mountain / total, 0..1
+}
+
+export function summarizePulses(entries: PulseEntry[]): PulseSummary {
+  const byTag: Record<PulseTag, number> = { mountain: 0, noise: 0, admin: 0 };
+  for (const e of entries) byTag[e.tag] += 1;
+  const total = entries.length;
+  return { total, byTag, focusRatio: total ? byTag.mountain / total : 0 };
+}
 
 export function startOfDayKey(ts: string): string {
   return todayKey(new Date(ts));

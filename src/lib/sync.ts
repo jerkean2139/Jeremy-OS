@@ -23,6 +23,7 @@ const DATA_KEYS = [
   "days",
   "elevatorLogs",
   "theaterLogs",
+  "pulseLogs",
   "manumation",
   "coachHistory",
 ] as const;
@@ -33,6 +34,7 @@ function snapshot(state: Store): JeremyState {
     days: state.days,
     elevatorLogs: state.elevatorLogs,
     theaterLogs: state.theaterLogs,
+    pulseLogs: state.pulseLogs,
     manumation: state.manumation,
     coachHistory: state.coachHistory,
   };

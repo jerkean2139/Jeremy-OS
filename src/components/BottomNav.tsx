@@ -2,12 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Sunrise, BarChart3, MessageCircle, Mountain } from "lucide-react";
+import { Home, Timer, BarChart3, MessageCircle, Mountain } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const items = [
   { href: "/", label: "Today", icon: Home },
-  { href: "/morning", label: "Check-In", icon: Sunrise },
+  { href: "/pulse", label: "Pulse", icon: Timer },
   { href: "/manumation", label: "Summit", icon: Mountain },
   { href: "/analytics", label: "Patterns", icon: BarChart3 },
   { href: "/coach", label: "Coach", icon: MessageCircle },

@@ -99,6 +99,22 @@ export interface IdentityStatement {
   lines: string[];
 }
 
+// Pulse = a 15-minute awareness check. "Am I on the Mountain or in the Noise?"
+export type PulseTag = "mountain" | "noise" | "admin";
+
+export const PULSE_TAGS: { value: PulseTag; label: string }[] = [
+  { value: "mountain", label: "Mountain" },
+  { value: "admin", label: "Admin" },
+  { value: "noise", label: "Noise" },
+];
+
+export interface PulseEntry {
+  id: string;
+  timestamp: string; // ISO
+  activity: string; // what you were doing
+  tag: PulseTag;
+}
+
 // Manumation launch command center.
 export interface ManumationState {
   funnelCompletion: number; // 0-100
@@ -121,6 +137,7 @@ export interface JeremyState {
   days: Record<string, DayEntry>;
   elevatorLogs: ElevatorLog[];
   theaterLogs: TheaterLog[];
+  pulseLogs: PulseEntry[];
   manumation: ManumationState;
   coachHistory: CoachMessage[];
 }

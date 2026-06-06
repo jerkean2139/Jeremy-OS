@@ -11,6 +11,7 @@ import {
   type DailyReflection,
   type ManumationState,
   type CoachMessage,
+  type PulseEntry,
 } from "./types";
 import { DEFAULT_IDENTITY } from "./codewords";
 import { todayKey, uid } from "./utils";
@@ -42,6 +43,7 @@ interface StoreActions {
 
   addElevatorLog: (log: Omit<ElevatorLog, "id" | "timestamp"> & { timestamp?: string }) => void;
   addTheaterLog: (log: Omit<TheaterLog, "id" | "timestamp"> & { timestamp?: string }) => void;
+  addPulseLog: (log: Omit<PulseEntry, "id" | "timestamp"> & { timestamp?: string }) => void;
 
   setManumation: (patch: Partial<ManumationState>) => void;
 
@@ -69,6 +71,7 @@ export const useStore = create<Store>()(
       days: {},
       elevatorLogs: [],
       theaterLogs: [],
+      pulseLogs: [],
       manumation: {
         funnelCompletion: 0,
         contentLoaded: 0,
@@ -146,6 +149,14 @@ export const useStore = create<Store>()(
           ],
         })),
 
+      addPulseLog: (log) =>
+        set((s) => ({
+          pulseLogs: [
+            { ...log, id: uid(), timestamp: log.timestamp ?? new Date().toISOString() },
+            ...s.pulseLogs,
+          ],
+        })),
+
       setManumation: (patch) =>
         set((s) => ({ manumation: { ...s.manumation, ...patch } })),
 
@@ -167,6 +178,7 @@ export const useStore = create<Store>()(
         days: s.days,
         elevatorLogs: s.elevatorLogs,
         theaterLogs: s.theaterLogs,
+        pulseLogs: s.pulseLogs,
         manumation: s.manumation,
         coachHistory: s.coachHistory,
       }),
