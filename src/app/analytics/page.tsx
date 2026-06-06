@@ -28,16 +28,17 @@ function Analytics() {
   const days = useStore((s) => s.days);
   const elevatorLogs = useStore((s) => s.elevatorLogs);
   const theaterLogs = useStore((s) => s.theaterLogs);
+  const pulseLogs = useStore((s) => s.pulseLogs);
   const [rangeDays, setRangeDays] = useState(7);
 
   const series = useMemo(
-    () => buildSeries(days, elevatorLogs, theaterLogs, rangeDays),
-    [days, elevatorLogs, theaterLogs, rangeDays]
+    () => buildSeries(days, elevatorLogs, theaterLogs, pulseLogs, rangeDays),
+    [days, elevatorLogs, theaterLogs, pulseLogs, rangeDays]
   );
   const cors = useMemo(() => correlations(series), [series]);
 
   const hasData = series.some(
-    (p) => p.pressure != null || p.floors > 0 || p.acts > 0 || p.sleep != null
+    (p) => p.pressure != null || p.floors > 0 || p.acts > 0 || p.sleep != null || p.focusPct != null
   );
 
   return (
@@ -139,6 +140,17 @@ function Analytics() {
               series={[
                 { key: "floors", name: "Floors", color: "#c97f4a", type: "bar", yAxis: "right" },
                 { key: "weight", name: "Weight (lbs)", color: "#cdd2db", type: "line" },
+              ]}
+            />
+          </ChartCard>
+
+          <ChartCard title="Focus — Mountain vs Noise">
+            <TrendChart
+              data={series}
+              series={[
+                { key: "pulseMountain", name: "Mountain", color: "#5d9c80", type: "bar" },
+                { key: "pulseNoise", name: "Noise", color: "#c97f4a", type: "bar" },
+                { key: "focusPct", name: "Focus %", color: "#7aa7d9", type: "line", yAxis: "right" },
               ]}
             />
           </ChartCard>

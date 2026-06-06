@@ -31,6 +31,7 @@ function Coach() {
   const days = useStore((s) => s.days);
   const elevatorLogs = useStore((s) => s.elevatorLogs);
   const theaterLogs = useStore((s) => s.theaterLogs);
+  const pulseLogs = useStore((s) => s.pulseLogs);
 
   const [input, setInput] = useState("");
   const [thinking, setThinking] = useState(false);
@@ -41,14 +42,14 @@ function Coach() {
   }, [history, thinking]);
 
   const buildContext = () => {
-    const series = buildSeries(days, elevatorLogs, theaterLogs, 14);
+    const series = buildSeries(days, elevatorLogs, theaterLogs, pulseLogs, 14);
     const cors = correlations(series);
     const streak = calcElevatorFreeStreak(elevatorLogs);
     const recent = series
       .slice(-7)
       .map(
         (p) =>
-          `${p.date}: pressure ${p.pressure ?? "—"}, floors ${p.floors}, acts ${p.acts}, sleep ${p.sleep ?? "—"}`
+          `${p.date}: pressure ${p.pressure ?? "—"}, floors ${p.floors}, acts ${p.acts}, sleep ${p.sleep ?? "—"}, focus ${p.focusPct ?? "—"}%`
       )
       .join("\n");
     const pat = cors.map((c) => `${c.label}: r=${c.value}`).join("; ");

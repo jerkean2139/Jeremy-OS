@@ -74,12 +74,16 @@ export interface DailyPoint {
   sleep: number | null;
   weight: number | null;
   movedMountain: number | null; // 1 / 0 / null
+  pulseMountain: number;
+  pulseNoise: number;
+  focusPct: number | null; // % of pulses on the Mountain that day
 }
 
 export function buildSeries(
   days: Record<string, DayEntry>,
   elevatorLogs: ElevatorLog[],
   theaterLogs: TheaterLog[],
+  pulseLogs: PulseEntry[],
   rangeDays: number,
   now = new Date()
 ): DailyPoint[] {
@@ -89,6 +93,7 @@ export function buildSeries(
     d.setDate(d.getDate() - i);
     const key = todayKey(d);
     const day = days[key];
+    const pulses = summarizePulses(pulsesOn(pulseLogs, key));
     out.push({
       date: key,
       label: d.toLocaleDateString(undefined, { weekday: "short" }),
@@ -99,6 +104,9 @@ export function buildSeries(
       weight: day?.weight ?? null,
       movedMountain:
         day?.movedMountain === true ? 1 : day?.movedMountain === false ? 0 : null,
+      pulseMountain: pulses.byTag.mountain,
+      pulseNoise: pulses.byTag.noise,
+      focusPct: pulses.total ? Math.round(pulses.focusRatio * 100) : null,
     });
   }
   return out;
@@ -155,6 +163,8 @@ export function correlations(series: DailyPoint[]): Correlation[] {
     { label: "Sleep vs Pressure", a: "sleep", b: "pressure" },
     { label: "Weight vs Elevator", a: "weight", b: "floors" },
     { label: "Productive days vs Elevator", a: "movedMountain", b: "floors" },
+    { label: "Focus vs Pressure", a: "focusPct", b: "pressure" },
+    { label: "Focus vs Elevator", a: "focusPct", b: "floors" },
   ];
   const out: Correlation[] = [];
   for (const def of defs) {
