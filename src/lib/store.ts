@@ -1,0 +1,163 @@
+"use client";
+
+import { create } from "zustand";
+import { persist, createJSONStorage } from "zustand/middleware";
+import {
+  type JeremyState,
+  type DayEntry,
+  type ElevatorLog,
+  type TheaterLog,
+  type MorningCheckIn,
+  type DailyReflection,
+  type ManumationState,
+  type CoachMessage,
+} from "./types";
+import { DEFAULT_IDENTITY } from "./codewords";
+import { todayKey, uid } from "./utils";
+
+interface StoreActions {
+  // hydration flag so we can avoid SSR/client mismatch flashes
+  _hydrated: boolean;
+  setHydrated: () => void;
+
+  getDay: (date?: string) => DayEntry;
+  updateDay: (patch: Partial<DayEntry>, date?: string) => void;
+
+  setIdentity: (lines: string[]) => void;
+
+  saveMorning: (m: MorningCheckIn, date?: string) => void;
+  saveReflection: (r: DailyReflection, date?: string) => void;
+
+  addElevatorLog: (log: Omit<ElevatorLog, "id" | "timestamp"> & { timestamp?: string }) => void;
+  addTheaterLog: (log: Omit<TheaterLog, "id" | "timestamp"> & { timestamp?: string }) => void;
+
+  setManumation: (patch: Partial<ManumationState>) => void;
+
+  addCoachMessage: (msg: Omit<CoachMessage, "id" | "timestamp">) => void;
+  clearCoach: () => void;
+}
+
+export type Store = JeremyState & StoreActions;
+
+function emptyDay(date: string): DayEntry {
+  return {
+    date,
+    mountain: "",
+    pressureLevel: 5,
+    pressureSources: [],
+    movedMountain: null,
+  };
+}
+
+export const useStore = create<Store>()(
+  persist(
+    (set, get) => ({
+      // --- initial state ---
+      identity: { lines: DEFAULT_IDENTITY },
+      days: {},
+      elevatorLogs: [],
+      theaterLogs: [],
+      manumation: {
+        funnelCompletion: 0,
+        contentLoaded: 0,
+        outboundStatus: 0,
+        summitPlanning: 0,
+        teamReadiness: 0,
+      },
+      coachHistory: [],
+
+      _hydrated: false,
+      setHydrated: () => set({ _hydrated: true }),
+
+      // --- day ---
+      getDay: (date) => {
+        const key = date ?? todayKey();
+        return get().days[key] ?? emptyDay(key);
+      },
+      updateDay: (patch, date) => {
+        const key = date ?? todayKey();
+        set((s) => {
+          const current = s.days[key] ?? emptyDay(key);
+          return { days: { ...s.days, [key]: { ...current, ...patch } } };
+        });
+      },
+
+      setIdentity: (lines) => set({ identity: { lines } }),
+
+      saveMorning: (m, date) => {
+        const key = date ?? todayKey();
+        set((s) => {
+          const current = s.days[key] ?? emptyDay(key);
+          return {
+            days: {
+              ...s.days,
+              [key]: {
+                ...current,
+                morning: m,
+                // The morning check-in seeds the day's mountain + pressure.
+                mountain: m.mountain || current.mountain,
+              },
+            },
+          };
+        });
+      },
+
+      saveReflection: (r, date) => {
+        const key = date ?? todayKey();
+        set((s) => {
+          const current = s.days[key] ?? emptyDay(key);
+          return {
+            days: {
+              ...s.days,
+              [key]: { ...current, reflection: r, movedMountain: r.movedMountain },
+            },
+          };
+        });
+      },
+
+      addElevatorLog: (log) =>
+        set((s) => ({
+          elevatorLogs: [
+            { ...log, id: uid(), timestamp: log.timestamp ?? new Date().toISOString() },
+            ...s.elevatorLogs,
+          ],
+        })),
+
+      addTheaterLog: (log) =>
+        set((s) => ({
+          theaterLogs: [
+            { ...log, id: uid(), timestamp: log.timestamp ?? new Date().toISOString() },
+            ...s.theaterLogs,
+          ],
+        })),
+
+      setManumation: (patch) =>
+        set((s) => ({ manumation: { ...s.manumation, ...patch } })),
+
+      addCoachMessage: (msg) =>
+        set((s) => ({
+          coachHistory: [
+            ...s.coachHistory,
+            { ...msg, id: uid(), timestamp: new Date().toISOString() },
+          ],
+        })),
+
+      clearCoach: () => set({ coachHistory: [] }),
+    }),
+    {
+      name: "jeremy-os-v1",
+      storage: createJSONStorage(() => localStorage),
+      partialize: (s) => ({
+        identity: s.identity,
+        days: s.days,
+        elevatorLogs: s.elevatorLogs,
+        theaterLogs: s.theaterLogs,
+        manumation: s.manumation,
+        coachHistory: s.coachHistory,
+      }),
+      onRehydrateStorage: () => (state) => {
+        state?.setHydrated();
+      },
+    }
+  )
+);
