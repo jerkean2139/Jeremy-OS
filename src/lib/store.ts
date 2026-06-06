@@ -15,10 +15,22 @@ import {
 import { DEFAULT_IDENTITY } from "./codewords";
 import { todayKey, uid } from "./utils";
 
+export type SyncStatus =
+  | "idle"
+  | "local" // no database configured; localStorage only
+  | "saving"
+  | "synced"
+  | "offline"
+  | "error";
+
 interface StoreActions {
   // hydration flag so we can avoid SSR/client mismatch flashes
   _hydrated: boolean;
   setHydrated: () => void;
+
+  // cloud-sync status (Postgres backend); not persisted
+  _syncStatus: SyncStatus;
+  _lastSyncedAt: string | null;
 
   getDay: (date?: string) => DayEntry;
   updateDay: (patch: Partial<DayEntry>, date?: string) => void;
@@ -68,6 +80,9 @@ export const useStore = create<Store>()(
 
       _hydrated: false,
       setHydrated: () => set({ _hydrated: true }),
+
+      _syncStatus: "idle",
+      _lastSyncedAt: null,
 
       // --- day ---
       getDay: (date) => {

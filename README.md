@@ -49,7 +49,8 @@ These live in one place: `src/lib/codewords.ts`.
 - **Recharts** for analytics
 - **lucide-react** icons
 - **OpenAI API** (optional) for the coach + summaries
-- **Supabase** (optional) for cloud sync — schema in `supabase/schema.sql`
+- **Postgres** (optional) for single-user cloud sync — deployed on **Railway**
+- **Supabase** (optional, alternative backend) — schema in `supabase/schema.sql`
 
 ---
 
@@ -72,14 +73,13 @@ Set these in `.env.local`:
 OPENAI_API_KEY=sk-...
 OPENAI_MODEL=gpt-4o-mini
 
-# Cloud sync (client-side)
-NEXT_PUBLIC_SUPABASE_URL=...
-NEXT_PUBLIC_SUPABASE_ANON_KEY=...
+# Cloud sync via Postgres (server-side). Provided automatically on Railway.
+DATABASE_URL=postgresql://...
+DATABASE_SSL=          # set "true" only for external/public DB connections
 ```
 
 Without `OPENAI_API_KEY`, the coach uses a local rule-based mentor engine.
-Without Supabase keys, all data stays in `localStorage`. To enable cloud sync,
-apply `supabase/schema.sql` (Row Level Security included).
+Without `DATABASE_URL`, all data stays in `localStorage`.
 
 ---
 
@@ -109,29 +109,60 @@ src/
     manumation/           # Launch command center
     analytics/            # Charts + correlations
     api/coach/route.ts    # OpenAI coach + local fallback
+    api/state/route.ts    # Postgres state GET/PUT (single user)
   components/
     dashboard/            # Dashboard sections
     charts/               # Recharts wrappers
     ui/                   # Card, Button, Slider, Chip, Progress
+    SyncProvider.tsx      # Starts client<->Postgres sync
   lib/
     store.ts              # Zustand + persistence
     types.ts              # Domain model
     codewords.ts          # The private language
     analytics.ts          # Series + correlation engine
-    supabase.ts           # Optional client
+    db.ts                 # Postgres pool + schema + read/write
+    sync.ts               # Pull-on-load, debounced push
+    supabase.ts           # Optional alternative client
   hooks/
     useVoice.ts           # Web Speech API
-supabase/schema.sql       # Optional cloud schema
+railway.json              # Railway build/deploy config
+supabase/schema.sql       # Optional alternative cloud schema
 public/                   # manifest.json, sw.js, icons
 ```
 
 ---
 
+## Data &amp; sync
+
+By default everything lives in the browser's `localStorage` — instant, private,
+offline. When `DATABASE_URL` is set, the entire single-user app state is also
+synced to Postgres as one JSONB document:
+
+- On load, the server document is pulled (server is source of truth). If the
+  database is empty, the local data is pushed up to seed it.
+- Every change is debounced (~1s) and saved to Postgres; `localStorage` stays
+  as the instant-load cache and offline fallback.
+- The `app_state` table is created automatically on first request — no manual
+  migration step.
+
+This is a deliberate single-user design (no auth): one row, last-write-wins.
+
 ## Deployment
 
-Deploy the frontend to **Vercel** (zero config). Add the optional env vars in
-the Vercel dashboard. For cloud sync, create a **Supabase** project and run
-`supabase/schema.sql`.
+### Railway (recommended — app + Postgres together)
+
+1. Create a new Railway project from this repo. Railway auto-detects Next.js
+   via Nixpacks; `railway.json` pins the build/start commands and a healthcheck.
+2. Add a **Postgres** database to the project. Railway exposes its connection
+   string; set the web service's `DATABASE_URL` to reference it
+   (e.g. `${{Postgres.DATABASE_URL}}`). The private network needs no SSL.
+3. (Optional) Add `OPENAI_API_KEY` for the live AI coach.
+4. Deploy. The app binds to Railway's `PORT` automatically.
+
+### Vercel (frontend) + external Postgres
+
+Deploy to Vercel and point `DATABASE_URL` at any Postgres (Railway, Neon,
+Supabase). For external/public connections, set `DATABASE_SSL=true`.
 
 ---
 
