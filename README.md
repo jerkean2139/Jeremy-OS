@@ -69,6 +69,11 @@ Open http://localhost:3000. The app runs entirely on-device by default.
 Set these in `.env.local`:
 
 ```bash
+# Passcode lock (server-side secret — NO NEXT_PUBLIC_ prefix).
+# When set, the whole app + data APIs sit behind this passcode. Strongly
+# recommended for any public deploy. Leave blank to disable (e.g. local dev).
+APP_PASSCODE=your-passcode
+
 # AI Recovery Coach + summaries (server-side)
 OPENAI_API_KEY=sk-...
 OPENAI_MODEL=gpt-5.4-mini
@@ -78,7 +83,11 @@ DATABASE_URL=postgresql://...
 DATABASE_SSL=          # set "true" only for external/public DB connections
 ```
 
-Without `OPENAI_API_KEY`, the coach uses a local rule-based mentor engine.
+When `APP_PASSCODE` is set, visitors are sent to `/unlock`; a correct passcode
+sets an `HttpOnly`, `Secure` cookie (30-day) and data APIs return `401` until
+unlocked. The raw passcode is never stored in the cookie or shipped to the
+browser. Without `OPENAI_API_KEY`, the coach uses a local rule-based mentor
+engine.
 Without `DATABASE_URL`, all data stays in `localStorage`.
 
 ---

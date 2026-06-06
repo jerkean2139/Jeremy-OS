@@ -15,6 +15,8 @@ const items = [
 
 export function BottomNav() {
   const pathname = usePathname();
+  // No navigation chrome on the lock screen.
+  if (pathname === "/unlock") return null;
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-ink-700/60 bg-ink-900/90 backdrop-blur-md">
       <div className="mx-auto flex max-w-lg items-stretch justify-around px-2 pb-[env(safe-area-inset-bottom)]">
