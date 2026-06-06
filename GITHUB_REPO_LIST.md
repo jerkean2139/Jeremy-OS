@@ -90,6 +90,81 @@ surfaced **129**. We'll finish this once the repos are added to session scope.
 | Repos I can currently READ | 1 (`jeremy-os` only) |
 | Renditions reviewed (360°) | 0 — pending access |
 
-**Next step to unblock the review:** add the Group A + Donna repos to this
-session's allowed repositories (Claude Code web/app repo picker), then I read
-them directly — read-only, kept fully separate from `jeremy-os`.
+**Next step to unblock the review:** add the repos below to a session's allowed
+repositories (Claude Code / Cowork repo picker), then review them directly —
+read-only, kept fully separate from `jeremy-os`.
+
+---
+
+## Review Plan — Waves (for Claude Cowork)
+
+Add and review in waves. **Do not try to review all 36 at once** — quality drops
+and many Group B entries are forks of public projects (confirm-only).
+
+### Wave 1 — The actual renditions (review deeply first)
+The core "Donna / Jeremy OS / Agent-Mob" lineage. This is where keep/merge/drop
+decisions get made.
+
+- [ ] `DONNA5.0` — https://github.com/jerkean2139/DONNA5.0
+- [ ] `Donnav3` — https://github.com/jerkean2139/Donnav3
+- [ ] `jeremys-os` — https://github.com/jerkean2139/jeremys-os
+- [ ] `agentmob1229` — https://github.com/jerkean2139/agentmob1229
+- [ ] `Agent-Mob` — https://github.com/jerkean2139/Agent-Mob
+- [ ] `agent-mob-10` — https://github.com/jerkean2139/agent-mob-10
+- [ ] `KOB-COMMAND-CENTER` — https://github.com/jerkean2139/KOB-COMMAND-CENTER
+- [ ] `godmode` — https://github.com/jerkean2139/godmode
+- [ ] `content-creation-tool` — https://github.com/jerkean2139/content-creation-tool
+- [ ] `pomo-buddy` — https://github.com/jerkean2139/pomo-buddy
+
+### Wave 2 — Vision / capability inputs (review for ideas to absorb)
+- [ ] `claude_life_assistant` — https://github.com/jerkean2139/claude_life_assistant
+- [ ] `Prometheus` — https://github.com/jerkean2139/Prometheus
+- [ ] `hermes-agent` — https://github.com/jerkean2139/hermes-agent
+- [ ] `VYBEKODERZ-OS` — https://github.com/jerkean2139/VYBEKODERZ-OS
+- [ ] `notebooklm-skill` — https://github.com/jerkean2139/notebooklm-skill
+- [ ] `claude-obsidian` — https://github.com/jerkean2139/claude-obsidian
+- [ ] `gohighlevel-mcp` — https://github.com/jerkean2139/gohighlevel-mcp
+- [ ] `ai-agent-training-center` — https://github.com/jerkean2139/ai-agent-training-center
+- [ ] `Agent-Mob-Team-Training-Portal` — https://github.com/jerkean2139/Agent-Mob-Team-Training-Portal
+- [ ] `agentmobv3` — https://github.com/jerkean2139/agentmobv3
+- [ ] `vibekoderz-command-center` — https://github.com/jerkean2139/vibekoderz-command-center
+- [ ] `vybekoderz-platform` — https://github.com/jerkean2139/vybekoderz-platform
+- [ ] `JKVAULTv2` — https://github.com/jerkean2139/JKVAULTv2
+- [ ] `BedStats-UI` _(personal)_ — https://github.com/jerkean2139/BedStats-UI
+- [ ] `bc3-api` — https://github.com/jerkean2139/bc3-api
+- [ ] `api-basecamp` — https://github.com/jerkean2139/api-basecamp
+
+### Wave 3 — Confirm-only (likely forks of public OSS; just identify)
+`karpathy` · `praisonai` · `memvid` · `vibevoice` · `open-coreui` ·
+`awesome-agent-skills` · `A-Curated-List-of-ML-System-Design-Case-Studies` ·
+`metaclaw` · `ruflo` · `openviking` · `agency-agents` ·
+`VYBEKODERZ-BASEBALL-TEAM`
+
+> Special check: **`openviking`** — Jeremy is unsure what this is and whether it's
+> the "LLM wiki / shared-context" tool he was hunting for. Identify it and report
+> back. (Note: the "LLM wiki pattern" is a *practice* — markdown-in-git as shared
+> context across chat + code — not necessarily a single tool.)
+
+---
+
+## Instructions for the reviewer (Claude Cowork)
+
+For each repo, in **read-only** mode (do **not** merge anything into a target
+repo without explicit approval), capture:
+
+1. **Purpose** — what it's meant to do, in one line.
+2. **State** — how far it got (skeleton / partial / working / abandoned).
+3. **Stack** — framework, language, data store, AI integration.
+4. **Standout** — the one or two things genuinely worth keeping.
+5. **Overlap** — which other rendition(s) it duplicates.
+6. **Verdict** — **KEEP / MERGE-INTO-[repo] / DROP**, with a one-line why.
+
+Then produce a single **360° synthesis**:
+- A comparison matrix across all reviewed repos.
+- A recommended **single home product** + what to merge into it and what to
+  archive.
+- The goal: **one focused product — not redundant, not bloated.**
+
+The leading consolidation candidate is **`jeremy-os`** (this repo): a deployed,
+single-user PWA on Railway + Postgres. See its `README.md` and `OVERVIEW.md`.
+
