@@ -132,6 +132,21 @@ export interface CoachMessage {
   timestamp: string;
 }
 
+// Background push reminder preferences (delivered via Web Push + a cron sweep).
+export interface ReminderPrefs {
+  pushEnabled: boolean;
+  morning: { enabled: boolean; time: string }; // "HH:MM" local-ish (see cron note)
+  reflection: { enabled: boolean; time: string };
+  pulse: { enabled: boolean; cadenceMin: number; startTime: string; endTime: string };
+}
+
+export const DEFAULT_REMINDERS: ReminderPrefs = {
+  pushEnabled: false,
+  morning: { enabled: true, time: "07:30" },
+  reflection: { enabled: true, time: "21:00" },
+  pulse: { enabled: false, cadenceMin: 60, startTime: "09:00", endTime: "17:00" },
+};
+
 export interface JeremyState {
   identity: IdentityStatement;
   days: Record<string, DayEntry>;
@@ -140,4 +155,5 @@ export interface JeremyState {
   pulseLogs: PulseEntry[];
   manumation: ManumationState;
   coachHistory: CoachMessage[];
+  reminders: ReminderPrefs;
 }

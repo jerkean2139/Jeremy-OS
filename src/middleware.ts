@@ -14,8 +14,13 @@ export async function middleware(req: NextRequest) {
 
   const { pathname } = req.nextUrl;
 
-  // Always allow the unlock screen and the auth endpoint itself.
-  if (pathname.startsWith("/unlock") || pathname.startsWith("/api/auth")) {
+  // Always allow the unlock screen, the auth endpoint, and the cron sweep
+  // (the cron route authenticates itself with CRON_SECRET).
+  if (
+    pathname.startsWith("/unlock") ||
+    pathname.startsWith("/api/auth") ||
+    pathname.startsWith("/api/push/cron")
+  ) {
     return NextResponse.next();
   }
 

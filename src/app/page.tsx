@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Building2, Theater as TheaterIcon, Flame, Sunrise, Moon, Timer } from "lucide-react";
+import { Building2, Theater as TheaterIcon, Flame, Sunrise, Moon, Timer, Bell } from "lucide-react";
 import { HydrationGate } from "@/components/HydrationGate";
 import { MissionControl } from "@/components/dashboard/MissionControl";
 import { MountainCard } from "@/components/dashboard/MountainCard";
@@ -40,12 +40,21 @@ function Dashboard() {
   return (
     <div className="space-y-5 animate-fade-in">
       {/* Header */}
-      <div>
-        <p className="text-sm text-mist-400">{dateStr}</p>
-        <h1 className="mt-0.5 text-2xl font-semibold tracking-tight text-mist-50">
-          {greeting()}, Jeremy
-        </h1>
-        <p className="mt-1.5 text-sm italic text-sage-400">{MISSION_STATEMENT}</p>
+      <div className="flex items-start justify-between">
+        <div>
+          <p className="text-sm text-mist-400">{dateStr}</p>
+          <h1 className="mt-0.5 text-2xl font-semibold tracking-tight text-mist-50">
+            {greeting()}, Jeremy
+          </h1>
+          <p className="mt-1.5 text-sm italic text-sage-400">{MISSION_STATEMENT}</p>
+        </div>
+        <Link
+          href="/reminders"
+          className="mt-1 rounded-full p-2 text-mist-400 hover:bg-ink-800 hover:text-mist-100"
+          aria-label="Reminders"
+        >
+          <Bell className="h-5 w-5" />
+        </Link>
       </div>
 
       {/* Section 1 */}

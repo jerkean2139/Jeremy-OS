@@ -41,6 +41,17 @@ export function ensureSchema(): Promise<void> {
            data jsonb not null default '{}'::jsonb,
            updated_at timestamptz not null default now(),
            constraint app_state_singleton check (id = 1)
+         );
+         create table if not exists push_subscriptions (
+           endpoint text primary key,
+           sub jsonb not null,
+           created_at timestamptz not null default now()
+         );
+         create table if not exists push_sent (
+           key text not null,
+           sent_date date not null,
+           sent_at timestamptz not null default now(),
+           primary key (key, sent_date)
          );`
       )
       .then(() => undefined)
@@ -85,4 +96,54 @@ export async function writeState(data: unknown): Promise<string> {
     [JSON.stringify(data)]
   );
   return res.rows[0].updated_at.toISOString();
+}
+
+// --- Push subscriptions ---
+
+export interface PushSub {
+  endpoint: string;
+  keys: { p256dh: string; auth: string };
+}
+
+export async function saveSubscription(sub: PushSub): Promise<void> {
+  const p = getPool();
+  if (!p) throw new Error("No database configured");
+  await ensureSchema();
+  await p.query(
+    `insert into push_subscriptions (endpoint, sub)
+       values ($1, $2::jsonb)
+     on conflict (endpoint) do update set sub = excluded.sub`,
+    [sub.endpoint, JSON.stringify(sub)]
+  );
+}
+
+export async function deleteSubscription(endpoint: string): Promise<void> {
+  const p = getPool();
+  if (!p) return;
+  await ensureSchema();
+  await p.query("delete from push_subscriptions where endpoint = $1", [endpoint]);
+}
+
+export async function listSubscriptions(): Promise<PushSub[]> {
+  const p = getPool();
+  if (!p) return [];
+  await ensureSchema();
+  const res = await p.query<{ sub: PushSub }>("select sub from push_subscriptions");
+  return res.rows.map((r) => r.sub);
+}
+
+/**
+ * Claim a reminder send for today. Returns true if this is the first time the
+ * (key, today) pair has been claimed — used to avoid duplicate cron sends.
+ */
+export async function claimSend(key: string, dateKey: string): Promise<boolean> {
+  const p = getPool();
+  if (!p) return false;
+  await ensureSchema();
+  const res = await p.query(
+    `insert into push_sent (key, sent_date) values ($1, $2)
+     on conflict (key, sent_date) do nothing`,
+    [key, dateKey]
+  );
+  return (res.rowCount ?? 0) > 0;
 }

@@ -12,6 +12,8 @@ import {
   type ManumationState,
   type CoachMessage,
   type PulseEntry,
+  type ReminderPrefs,
+  DEFAULT_REMINDERS,
 } from "./types";
 import { DEFAULT_IDENTITY } from "./codewords";
 import { todayKey, uid } from "./utils";
@@ -47,6 +49,8 @@ interface StoreActions {
 
   setManumation: (patch: Partial<ManumationState>) => void;
 
+  setReminders: (patch: Partial<ReminderPrefs>) => void;
+
   addCoachMessage: (msg: Omit<CoachMessage, "id" | "timestamp">) => void;
   clearCoach: () => void;
 }
@@ -80,6 +84,7 @@ export const useStore = create<Store>()(
         teamReadiness: 0,
       },
       coachHistory: [],
+      reminders: DEFAULT_REMINDERS,
 
       _hydrated: false,
       setHydrated: () => set({ _hydrated: true }),
@@ -160,6 +165,9 @@ export const useStore = create<Store>()(
       setManumation: (patch) =>
         set((s) => ({ manumation: { ...s.manumation, ...patch } })),
 
+      setReminders: (patch) =>
+        set((s) => ({ reminders: { ...s.reminders, ...patch } })),
+
       addCoachMessage: (msg) =>
         set((s) => ({
           coachHistory: [
@@ -181,6 +189,7 @@ export const useStore = create<Store>()(
         pulseLogs: s.pulseLogs,
         manumation: s.manumation,
         coachHistory: s.coachHistory,
+        reminders: s.reminders,
       }),
       onRehydrateStorage: () => (state) => {
         state?.setHydrated();

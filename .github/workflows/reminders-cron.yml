@@ -1,0 +1,27 @@
+name: Reminder sweep
+
+# Drives Jeremy OS background reminders. Hits the deployed cron endpoint on a
+# schedule; the endpoint decides what (if anything) is due and sends Web Push.
+#
+# Required repo secrets (Settings → Secrets and variables → Actions):
+#   APP_URL      e.g. https://jeremy-os.up.railway.app  (no trailing slash)
+#   CRON_SECRET  must match the CRON_SECRET env var on the deployment
+#
+# GitHub cron granularity is ~5 min and can be delayed a few minutes — fine for
+# morning/reflection/pulse nudges. For tighter timing, point any external cron
+# (Railway cron service, cron-job.org) at the same URL instead.
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch: {}
+
+jobs:
+  sweep:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping reminder endpoint
+        run: |
+          curl -fsS --max-time 30 \
+            "${{ secrets.APP_URL }}/api/push/cron?secret=${{ secrets.CRON_SECRET }}" \
+            && echo "ok"

@@ -21,6 +21,42 @@ self.addEventListener("activate", (event) => {
   self.clients.claim();
 });
 
+// --- Web Push ---
+self.addEventListener("push", (event) => {
+  let data = { title: "Jeremy OS", body: "", url: "/", tag: "jeremy-os" };
+  try {
+    if (event.data) data = { ...data, ...event.data.json() };
+  } catch (e) {
+    /* keep defaults */
+  }
+  event.waitUntil(
+    self.registration.showNotification(data.title, {
+      body: data.body,
+      tag: data.tag,
+      icon: "/icons/icon-192.png",
+      badge: "/icons/icon-192.png",
+      data: { url: data.url || "/" },
+      vibrate: [180, 80, 180],
+    })
+  );
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const url = (event.notification.data && event.notification.data.url) || "/";
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
+      for (const c of clients) {
+        if ("focus" in c) {
+          c.navigate(url);
+          return c.focus();
+        }
+      }
+      return self.clients.openWindow(url);
+    })
+  );
+});
+
 self.addEventListener("fetch", (event) => {
   const { request } = event;
   if (request.method !== "GET") return;
