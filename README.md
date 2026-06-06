@@ -149,7 +149,7 @@ This is a deliberate single-user design (no auth): one row, last-write-wins.
 
 ## Deployment
 
-### Railway (recommended — app + Postgres together)
+Jeremy OS deploys to **Railway** — app and Postgres together in one project.
 
 1. Create a new Railway project from this repo. Railway auto-detects Next.js
    via Nixpacks; `railway.json` pins the build/start commands and a healthcheck.
@@ -159,10 +159,8 @@ This is a deliberate single-user design (no auth): one row, last-write-wins.
 3. (Optional) Add `OPENAI_API_KEY` for the live AI coach.
 4. Deploy. The app binds to Railway's `PORT` automatically.
 
-### Vercel (frontend) + external Postgres
-
-Deploy to Vercel and point `DATABASE_URL` at any Postgres (Railway, Neon,
-Supabase). For external/public connections, set `DATABASE_SSL=true`.
+> The app is a standard Next.js server, so it also runs on any Node host that
+> sets `PORT` and `DATABASE_URL` — but Railway is the supported target.
 
 ---
 
