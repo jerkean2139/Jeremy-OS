@@ -71,7 +71,7 @@ Set these in `.env.local`:
 ```bash
 # AI Recovery Coach + summaries (server-side)
 OPENAI_API_KEY=sk-...
-OPENAI_MODEL=gpt-4o-mini
+OPENAI_MODEL=gpt-5.4-mini
 
 # Cloud sync via Postgres (server-side). Provided automatically on Railway.
 DATABASE_URL=postgresql://...

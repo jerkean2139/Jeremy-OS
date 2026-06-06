@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
   }
 
   const apiKey = process.env.OPENAI_API_KEY;
-  const model = process.env.OPENAI_MODEL || "gpt-4o-mini";
+  const model = process.env.OPENAI_MODEL || "gpt-5.4-mini";
 
   // --- Local fallback (no API key configured) ---
   if (!apiKey) {
