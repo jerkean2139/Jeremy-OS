@@ -65,7 +65,7 @@ src/
   app/
     page.tsx              # Dashboard (Today)
     morning/              # Morning check-in (voice-first)
-    routine/              # Morning Ritual: timed check-in → stretch → walk → briefing
+    routine/              # Morning Ritual: timed check-in → stretch → walk → read → briefing
     pulse/                # 15-min "Mountain or Noise?" timer + capture
     elevator/             # Elevator tracker (key habit)
     theater/              # Theater tracker (key habit)
