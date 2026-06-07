@@ -139,6 +139,9 @@ export interface Habit {
   stackAfter?: string; // an anchor habit you already do
   cueTime?: string; // "HH:MM"
   cuePlace?: string; // a location
+  // Temptation bundling ("make it attractive"): a want you only allow
+  // yourself while/right after doing this habit.
+  temptation?: string;
   // Accountability ("make it unsatisfying to miss"): a contract + a witness.
   stakes?: string; // what it costs you to miss
   accountablePartner?: string; // who you've told / who's watching
