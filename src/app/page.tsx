@@ -8,6 +8,7 @@ import { MountainCard } from "@/components/dashboard/MountainCard";
 import { PressureCard } from "@/components/dashboard/PressureCard";
 import { VitalsCard } from "@/components/dashboard/VitalsCard";
 import { InsightCard } from "@/components/dashboard/InsightCard";
+import { SlackBriefing } from "@/components/SlackBriefing";
 import { StatTile } from "@/components/StatTile";
 import { useStore } from "@/lib/store";
 import { MISSION_STATEMENT } from "@/lib/codewords";
@@ -104,6 +105,9 @@ function Dashboard() {
           </div>
         </div>
       </Link>
+
+      {/* Slack — the 7am "start here" briefing */}
+      <SlackBriefing />
 
       {/* Proactive insight */}
       <InsightCard />
