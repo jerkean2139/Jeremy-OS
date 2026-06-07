@@ -2,16 +2,18 @@
 
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
-import { Mountain, Sparkles, Sunrise, Check, ArrowRight } from "lucide-react";
+import { Mountain, Sparkles, Sunrise, Check, ArrowRight, Repeat } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { Button } from "@/components/ui/Button";
 import { MISSION_STATEMENT, DEFAULT_IDENTITY } from "@/lib/codewords";
 import { pushSupported, subscribeToPush } from "@/lib/push";
 import { cn } from "@/lib/utils";
 
-// First-run setup: a calm, three-step welcome shown once on a fresh install.
+// First-run setup: a calm, four-step welcome shown once on a fresh install.
 // Mounted globally; it renders only after hydration, only when onboarding
 // hasn't been completed, and never over the passcode/unlock screen.
+const STEPS = [0, 1, 2, 3];
+
 export function Onboarding() {
   const pathname = usePathname();
   const hydrated = useStore((s) => s._hydrated);
@@ -20,10 +22,14 @@ export function Onboarding() {
   const setIdentity = useStore((s) => s.setIdentity);
   const setReminders = useStore((s) => s.setReminders);
   const reminders = useStore((s) => s.reminders);
+  const addHabit = useStore((s) => s.addHabit);
   const completeOnboarding = useStore((s) => s.completeOnboarding);
 
   const [step, setStep] = useState(0);
   const [lines, setLines] = useState("");
+  const [habitName, setHabitName] = useState("");
+  const [habitIdentity, setHabitIdentity] = useState("");
+  const [habitAdded, setHabitAdded] = useState(false);
   const [time, setTime] = useState(reminders.morning.time || "06:00");
   const [pushBusy, setPushBusy] = useState(false);
   const [pushOn, setPushOn] = useState(false);
@@ -60,17 +66,28 @@ export function Onboarding() {
     setStep(2);
   };
 
+  const saveHabitAndNext = () => {
+    const name = habitName.trim();
+    if (name && !habitAdded) {
+      addHabit({ name, kind: "build", identity: habitIdentity.trim() || undefined });
+      setHabitAdded(true);
+    }
+    setStep(3);
+  };
+
   const finish = () => {
     setReminders({ morning: { ...reminders.morning, enabled: true, time } });
     completeOnboarding();
   };
+
+  const skip = () => (step >= 3 ? finish() : setStep(step + 1));
 
   return (
     <div className="fixed inset-0 z-[60] overflow-y-auto bg-ink-950/95 backdrop-blur-md">
       <div className="mx-auto flex min-h-[100dvh] w-full max-w-lg flex-col px-6 pb-[max(env(safe-area-inset-bottom),1.5rem)] pt-[max(env(safe-area-inset-top),2rem)]">
         {/* Progress dots */}
         <div className="mb-8 flex items-center justify-center gap-2">
-          {[0, 1, 2].map((i) => (
+          {STEPS.map((i) => (
             <span
               key={i}
               className={cn(
@@ -117,6 +134,47 @@ export function Onboarding() {
         )}
 
         {step === 2 && (
+          <div className="flex min-h-0 flex-1 flex-col">
+            <div className="mb-5">
+              <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-sage-500/15">
+                <Repeat className="h-6 w-6 text-sage-400" />
+              </div>
+              <h2 className="text-xl font-semibold text-mist-50">Small votes</h2>
+              <p className="mt-2 text-sm leading-relaxed text-mist-400">
+                You become your habits. Every small action is a vote for the person you&apos;re
+                becoming — you never have to be perfect, just never miss twice. Start with one
+                habit to build (you can change it anytime).
+              </p>
+            </div>
+
+            <div className="space-y-3 rounded-2xl border border-ink-700/60 bg-ink-850/60 p-5">
+              <div>
+                <label className="text-[11px] font-medium uppercase tracking-[0.14em] text-mist-500">
+                  One habit to build
+                </label>
+                <input
+                  value={habitName}
+                  onChange={(e) => setHabitName(e.target.value)}
+                  placeholder="e.g. Walk every morning"
+                  className="mt-1 w-full rounded-lg border border-ink-700 bg-ink-900/60 px-3 py-2 text-sm text-mist-50 placeholder:text-mist-600 focus:border-sage-500/50 focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="text-[11px] font-medium uppercase tracking-[0.14em] text-mist-500">
+                  A vote for the kind of person who… <span className="text-mist-600">(optional)</span>
+                </label>
+                <input
+                  value={habitIdentity}
+                  onChange={(e) => setHabitIdentity(e.target.value)}
+                  placeholder="moves their body daily"
+                  className="mt-1 w-full rounded-lg border border-ink-700 bg-ink-900/60 px-3 py-2 text-sm text-mist-50 placeholder:text-mist-600 focus:border-sage-500/50 focus:outline-none"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {step === 3 && (
           <div className="flex min-h-0 flex-1 flex-col">
             <div className="mb-5">
               <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-ember-500/15">
@@ -179,16 +237,22 @@ export function Onboarding() {
             </Button>
           )}
           {step === 2 && (
+            <Button size="lg" className="w-full" onClick={saveHabitAndNext}>
+              {habitName.trim() ? "Add habit & continue" : "Continue"}{" "}
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+          )}
+          {step === 3 && (
             <Button size="lg" className="w-full" onClick={finish}>
               Enter Jeremy OS
             </Button>
           )}
           {step > 0 && (
             <button
-              onClick={step === 2 ? finish : () => setStep(2)}
+              onClick={skip}
               className="block w-full text-center text-xs text-mist-500 hover:text-mist-300"
             >
-              {step === 2 ? "Skip for now" : "Skip"}
+              {step === 3 ? "Skip for now" : "Skip"}
             </button>
           )}
         </div>
