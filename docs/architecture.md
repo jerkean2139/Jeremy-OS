@@ -31,7 +31,7 @@ Browser (PWA)
 ## Client-side state — Zustand + localStorage
 
 - The store is `src/lib/store.ts`: a Zustand `create()` wrapped in the `persist` middleware.
-- **Persistence**: `createJSONStorage(() => localStorage)` under the key `jeremy-os-v1`. `partialize` persists only the seven domain slices (`identity`, `days`, `elevatorLogs`, `theaterLogs`, `pulseLogs`, `manumation`, `coachHistory`) — never the transient flags.
+- **Persistence**: `createJSONStorage(() => localStorage)` under the key `jeremy-os-v1`. `partialize` persists only the domain slices (`identity`, `days`, `elevatorLogs`, `theaterLogs`, `pulseLogs`, `manumation`, `coachHistory`, `coachMemory`, `reminders`) — never the transient flags.
 - **Hydration**: persisted state hydrates on the client only. `onRehydrateStorage` flips `_hydrated`, and `HydrationGate` (`src/components/HydrationGate.tsx`) renders a calm spinner until then, avoiding SSR/client mismatch flashes.
 - The store also holds transient, non-persisted fields: `_hydrated`, `_syncStatus`, `_lastSyncedAt`.
 - Days are keyed by ISO date (`YYYY-MM-DD`) via `todayKey()`. `getDay()` returns an `emptyDay` default (pressure 5, empty mountain) when a date has no entry yet.

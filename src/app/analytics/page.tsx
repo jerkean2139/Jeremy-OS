@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { TrendingUp, Info } from "lucide-react";
+import Link from "next/link";
+import { TrendingUp, Info, CalendarRange, ChevronRight } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { HydrationGate } from "@/components/HydrationGate";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
@@ -44,6 +45,21 @@ function Analytics() {
   return (
     <div>
       <PageHeader title="Patterns" subtitle="Awareness, made visible." back="/" />
+
+      {/* Weekly review entry */}
+      <Link
+        href="/review"
+        className="mb-5 flex items-center gap-3 rounded-2xl border border-ink-700/60 bg-gradient-to-br from-sky-500/10 to-sage-500/5 p-4 transition-colors hover:border-ink-600"
+      >
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-ink-800/70">
+          <CalendarRange className="h-5 w-5 text-sky-400" />
+        </div>
+        <div className="flex-1">
+          <div className="text-sm font-medium text-mist-100">Weekly Review</div>
+          <div className="text-xs text-mist-500">A calm digest of your last 7 days</div>
+        </div>
+        <ChevronRight className="h-5 w-5 text-mist-600" />
+      </Link>
 
       {/* Range selector */}
       <div className="mb-5 flex gap-2">

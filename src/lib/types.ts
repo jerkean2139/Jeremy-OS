@@ -155,5 +155,7 @@ export interface JeremyState {
   pulseLogs: PulseEntry[];
   manumation: ManumationState;
   coachHistory: CoachMessage[];
+  // Durable facts the coach carries between sessions (editable; fed into every reply).
+  coachMemory: string[];
   reminders: ReminderPrefs;
 }

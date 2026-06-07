@@ -58,6 +58,10 @@ interface StoreActions {
   addCoachMessage: (msg: Omit<CoachMessage, "id" | "timestamp">) => void;
   clearCoach: () => void;
 
+  setCoachMemory: (notes: string[]) => void;
+  addCoachMemory: (note: string) => void;
+  removeCoachMemory: (index: number) => void;
+
   // Replace the whole document from a backup file (data export/restore).
   importState: (data: Partial<JeremyState>) => void;
 }
@@ -91,6 +95,7 @@ export const useStore = create<Store>()(
         teamReadiness: 0,
       },
       coachHistory: [],
+      coachMemory: [],
       reminders: DEFAULT_REMINDERS,
 
       _hydrated: false,
@@ -192,6 +197,16 @@ export const useStore = create<Store>()(
 
       clearCoach: () => set({ coachHistory: [] }),
 
+      setCoachMemory: (notes) => set({ coachMemory: notes }),
+      addCoachMemory: (note) =>
+        set((s) => {
+          const n = note.trim();
+          if (!n || s.coachMemory.includes(n)) return {};
+          return { coachMemory: [...s.coachMemory, n] };
+        }),
+      removeCoachMemory: (index) =>
+        set((s) => ({ coachMemory: s.coachMemory.filter((_, i) => i !== index) })),
+
       importState: (data) =>
         set((s) => ({
           identity: data.identity ?? s.identity,
@@ -201,6 +216,7 @@ export const useStore = create<Store>()(
           pulseLogs: data.pulseLogs ?? s.pulseLogs,
           manumation: data.manumation ?? s.manumation,
           coachHistory: data.coachHistory ?? s.coachHistory,
+          coachMemory: data.coachMemory ?? s.coachMemory,
           reminders: data.reminders ?? s.reminders,
         })),
     }),
@@ -215,6 +231,7 @@ export const useStore = create<Store>()(
         pulseLogs: s.pulseLogs,
         manumation: s.manumation,
         coachHistory: s.coachHistory,
+        coachMemory: s.coachMemory,
         reminders: s.reminders,
       }),
       onRehydrateStorage: () => (state) => {

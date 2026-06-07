@@ -19,6 +19,7 @@ The entire persisted app state. This is exactly what `localStorage` holds (key `
 | `pulseLogs` | `PulseEntry[]` | 15-minute awareness checks (newest first). |
 | `manumation` | `ManumationState` | Launch readiness sliders. |
 | `coachHistory` | `CoachMessage[]` | The AI coach conversation. |
+| `coachMemory` | `string[]` | Durable facts the coach carries between sessions (editable; fed into every reply). |
 
 ---
 

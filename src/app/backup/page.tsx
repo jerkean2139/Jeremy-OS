@@ -27,6 +27,7 @@ const DATA_KEYS = [
   "pulseLogs",
   "manumation",
   "coachHistory",
+  "coachMemory",
   "reminders",
 ] as const;
 
@@ -54,6 +55,7 @@ function Backup() {
     pulseLogs: store.pulseLogs,
     manumation: store.manumation,
     coachHistory: store.coachHistory,
+    coachMemory: store.coachMemory,
     reminders: store.reminders,
   });
 

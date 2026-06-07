@@ -24,6 +24,9 @@ The core single-user PWA is complete and shipping.
 - [x] **AI-generated insights** — proactive pattern write-ups surfaced unprompted on the dashboard (`InsightCard`). A deterministic engine (`lib/insights.ts`) always produces one calm observation + one small action; the coach (`mode:"insight"`) refines the wording once per day when an AI key is configured (cached in localStorage). Tone-aware (lift / calm / watch), never shame.
 - [x] **History & edit past days** — `/history` lists every day with data; `/history/[date]` edits the day's mountain, pressure + sources, sleep, weight, and "moved the mountain?", links to date-scoped morning/reflection editing (`?date=`), and lets you delete stray habit/pulse logs.
 - [x] **Data export & backup** — `/backup` exports a full JSON snapshot (re-importable to restore/move devices) and a daily-series CSV; restore validates the file and confirms before replacing local state (syncs up if cloud sync is on).
+- [x] **Journal search** — `/search`: instant on-device full-text search across morning check-ins, reflections, pulse notes, habit-log notes, and each day's mountain (`lib/search.ts`), with match highlighting and deep links to the right editor.
+- [x] **Coach memory** — persistent, editable facts the coach carries across sessions (`coachMemory`), injected into every reply. Managed from a "Coach remembers" panel on `/coach`; "Learn from this chat" distills durable notes via the coach (`mode:"memory"`, AI-only).
+- [x] **Weekly Review** — `/review`: a calm auto-generated digest of the last 7 days (`lib/review.ts`) — Elevator-free days, mountain progress, avg pressure/sleep, focus %, the week's strongest pattern, a named win, and one move for next week. Optional AI narrative (`mode:"review"`), cached per week.
 
 ---
 
@@ -32,8 +35,6 @@ The core single-user PWA is complete and shipping.
 Reliability and intelligence improvements. None of these are built yet unless marked.
 
 - [ ] **Apple Health integration** — pull sleep, weight, and activity automatically instead of manual entry into `DayEntry`.
-- [ ] **Journal search** — full-text search across morning check-ins, reflections, pulse notes, and habit-log notes.
-- [ ] **Custom GPT memory** — persistent, evolving coach memory across sessions beyond the current `coachHistory` window.
 
 ---
 

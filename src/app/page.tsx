@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Building2, Theater as TheaterIcon, Flame, Sunrise, Moon, Timer, Bell, History, Database } from "lucide-react";
+import { Building2, Theater as TheaterIcon, Flame, Sunrise, Moon, Timer, Bell, History, Database, Search, CalendarRange } from "lucide-react";
 import { HydrationGate } from "@/components/HydrationGate";
 import { MissionControl } from "@/components/dashboard/MissionControl";
 import { MountainCard } from "@/components/dashboard/MountainCard";
@@ -50,6 +50,13 @@ function Dashboard() {
           <p className="mt-1.5 text-sm italic text-sage-400">{MISSION_STATEMENT}</p>
         </div>
         <div className="mt-1 flex items-center gap-1">
+          <Link
+            href="/search"
+            className="rounded-full p-2 text-mist-400 hover:bg-ink-800 hover:text-mist-100"
+            aria-label="Search"
+          >
+            <Search className="h-5 w-5" />
+          </Link>
           <Link
             href="/history"
             className="rounded-full p-2 text-mist-400 hover:bg-ink-800 hover:text-mist-100"
@@ -123,6 +130,20 @@ function Dashboard() {
         <div className="flex-1">
           <div className="text-sm font-medium text-mist-100">Start a Pulse</div>
           <div className="text-xs text-mist-500">15-min check: Mountain or Noise?</div>
+        </div>
+      </Link>
+
+      {/* Weekly Review */}
+      <Link
+        href="/review"
+        className="flex items-center gap-3 rounded-2xl border border-ink-700/60 bg-gradient-to-br from-sky-500/10 to-sage-500/5 p-4 transition-colors hover:border-ink-600"
+      >
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-ink-800/70">
+          <CalendarRange className="h-5 w-5 text-sky-400" />
+        </div>
+        <div className="flex-1">
+          <div className="text-sm font-medium text-mist-100">Weekly Review</div>
+          <div className="text-xs text-mist-500">Your last 7 days, in focus</div>
         </div>
       </Link>
 
