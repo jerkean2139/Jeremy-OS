@@ -23,7 +23,14 @@ import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { useStore } from "@/lib/store";
 import type { Habit, HabitKind, HabitLaws } from "@/lib/types";
-import { activeHabits, habitDoneToday, habitStreak, missState, habitRecipe } from "@/lib/habits";
+import {
+  activeHabits,
+  habitDoneToday,
+  habitStreak,
+  missState,
+  habitRecipe,
+  persistenceNote,
+} from "@/lib/habits";
 import { cn } from "@/lib/utils";
 
 const inputCls =
@@ -60,6 +67,8 @@ function Habits() {
   const active = useMemo(() => activeHabits(habits ?? []), [habits]);
   const build = active.filter((h) => h.kind === "build");
   const breakers = active.filter((h) => h.kind === "break");
+  const maxStreak = active.reduce((m, h) => Math.max(m, habitStreak(h)), 0);
+  const persistence = persistenceNote(maxStreak);
 
   const openNew = () => {
     setEditing(null);
@@ -95,6 +104,13 @@ function Habits() {
               <div className="text-xs text-mist-500">See your current habits clearly — no judgment</div>
             </div>
           </Link>
+
+          {persistence && (
+            <div className="mb-5 flex items-start gap-2.5 rounded-2xl border border-sage-500/25 bg-sage-500/5 p-4">
+              <TrendingUp className="mt-0.5 h-4 w-4 shrink-0 text-sage-400" />
+              <p className="text-sm leading-relaxed text-mist-200">{persistence}</p>
+            </div>
+          )}
 
           {active.length === 0 ? (
             <Card>
