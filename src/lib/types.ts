@@ -139,6 +139,9 @@ export interface Habit {
   stackAfter?: string; // an anchor habit you already do
   cueTime?: string; // "HH:MM"
   cuePlace?: string; // a location
+  // Accountability ("make it unsatisfying to miss"): a contract + a witness.
+  stakes?: string; // what it costs you to miss
+  accountablePartner?: string; // who you've told / who's watching
   laws: HabitLaws;
   createdAt: string; // ISO
   archivedAt?: string | null;
