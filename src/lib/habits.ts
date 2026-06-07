@@ -139,6 +139,40 @@ export interface VoteTotals {
   todayVotes: Vote[];
 }
 
+// Per-day series for the Analytics page: votes cast, build-habit reps, and
+// the share of build habits completed each day.
+export interface HabitPoint {
+  date: string;
+  label: string;
+  votes: number;
+  reps: number;
+  completionPct: number | null;
+}
+
+export function buildHabitSeries(
+  src: VoteSources,
+  rangeDays: number,
+  now = new Date()
+): HabitPoint[] {
+  const buildTotal = activeHabits(src.habits).filter((h) => h.kind === "build").length;
+  const out: HabitPoint[] = [];
+  for (let i = rangeDays - 1; i >= 0; i--) {
+    const d = shift(now, -i);
+    const key = todayKey(d);
+    const reps = activeHabits(src.habits).filter(
+      (h) => h.kind === "build" && habitMarkedOn(h, key)
+    ).length;
+    out.push({
+      date: key,
+      label: d.toLocaleDateString(undefined, { weekday: "short" }),
+      votes: votesForDay(src, key).length,
+      reps,
+      completionPct: buildTotal > 0 ? Math.round((reps / buildTotal) * 100) : null,
+    });
+  }
+  return out;
+}
+
 export function voteTotals(src: VoteSources, now = new Date()): VoteTotals {
   const todayK = todayKey(now);
   const todayVotes = votesForDay(src, todayK);

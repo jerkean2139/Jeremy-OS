@@ -10,23 +10,26 @@ import {
   Tooltip,
   CartesianGrid,
 } from "recharts";
-import { type DailyPoint } from "@/lib/analytics";
 
-interface SeriesDef {
-  key: keyof DailyPoint;
+interface SeriesDef<T> {
+  key: Extract<keyof T, string>;
   name: string;
   color: string;
   type: "line" | "bar";
   yAxis?: "left" | "right";
 }
 
-interface TrendChartProps {
-  data: DailyPoint[];
-  series: SeriesDef[];
+interface TrendChartProps<T> {
+  data: T[];
+  series: SeriesDef<T>[];
   height?: number;
 }
 
-export function TrendChart({ data, series, height = 200 }: TrendChartProps) {
+export function TrendChart<T extends { date: string }>({
+  data,
+  series,
+  height = 200,
+}: TrendChartProps<T>) {
   const hasRight = series.some((s) => s.yAxis === "right");
   return (
     <ResponsiveContainer width="100%" height={height}>
