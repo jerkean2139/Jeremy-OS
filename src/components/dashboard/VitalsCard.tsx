@@ -65,7 +65,7 @@ export function VitalsCard() {
   const [open, setOpen] = useState(false);
 
   // How many recovery metrics are filled in today, for the collapsed hint.
-  const recoveryFilled = [day.readiness, day.sleepScore, day.hrv, day.restingHr].filter(
+  const recoveryFilled = [day.readiness, day.sleepScore, day.hrv, day.restingHr, day.steps].filter(
     (v) => v != null
   ).length;
 
@@ -117,6 +117,13 @@ export function VitalsCard() {
             value={day.restingHr}
             onCommit={(v) => updateDay({ restingHr: v })}
             step={1}
+          />
+          <InlineNumber
+            label="Steps"
+            unit=""
+            value={day.steps}
+            onCommit={(v) => updateDay({ steps: v })}
+            step={100}
           />
         </div>
       )}

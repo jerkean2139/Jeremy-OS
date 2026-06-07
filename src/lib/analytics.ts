@@ -77,6 +77,7 @@ export interface DailyPoint {
   sleepScore: number | null;
   hrv: number | null;
   restingHr: number | null;
+  steps: number | null;
   movedMountain: number | null; // 1 / 0 / null
   pulseMountain: number;
   pulseNoise: number;
@@ -110,6 +111,7 @@ export function buildSeries(
       sleepScore: day?.sleepScore ?? null,
       hrv: day?.hrv ?? null,
       restingHr: day?.restingHr ?? null,
+      steps: day?.steps ?? null,
       movedMountain:
         day?.movedMountain === true ? 1 : day?.movedMountain === false ? 0 : null,
       pulseMountain: pulses.byTag.mountain,
@@ -174,6 +176,8 @@ export function correlations(series: DailyPoint[]): Correlation[] {
     { label: "HRV vs Pressure", a: "hrv", b: "pressure" },
     { label: "Sleep quality vs Pressure", a: "sleepScore", b: "pressure" },
     { label: "Resting HR vs Pressure", a: "restingHr", b: "pressure" },
+    { label: "Steps vs Pressure", a: "steps", b: "pressure" },
+    { label: "Steps vs Elevator", a: "steps", b: "floors" },
     { label: "Weight vs Elevator", a: "weight", b: "floors" },
     { label: "Productive days vs Elevator", a: "movedMountain", b: "floors" },
     { label: "Focus vs Pressure", a: "focusPct", b: "pressure" },

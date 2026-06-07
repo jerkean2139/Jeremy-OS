@@ -73,9 +73,9 @@ export async function GET(req: NextRequest) {
 function payloadFor(name: "morning" | "reflection") {
   return name === "morning"
     ? {
-        title: "Morning check-in",
-        body: "What is true today? Name the mountain.",
-        url: "/morning",
+        title: "Morning ritual",
+        body: "6am. Check in, stretch, walk — at the computer by 7.",
+        url: "/routine",
         tag: "jeremy-os-morning",
       }
     : {

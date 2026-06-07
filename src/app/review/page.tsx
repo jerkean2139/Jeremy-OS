@@ -152,6 +152,12 @@ function Review() {
           {review.avgHrv != null && (
             <StatTile label="HRV" value={review.avgHrv} unit="ms" hint="Oura avg" />
           )}
+          {review.avgSteps != null && (
+            <StatTile label="Steps" value={Math.round(review.avgSteps).toLocaleString()} hint="daily avg" />
+          )}
+          {review.ritualDays > 0 && (
+            <StatTile label="Morning ritual" value={review.ritualDays} unit="/ 7 days" accent="text-sage-400" />
+          )}
         </div>
 
         {/* Highlights */}

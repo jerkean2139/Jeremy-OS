@@ -65,6 +65,7 @@ src/
   app/
     page.tsx              # Dashboard (Today)
     morning/              # Morning check-in (voice-first)
+    routine/              # Morning Ritual: timed check-in → stretch → walk → briefing
     pulse/                # 15-min "Mountain or Noise?" timer + capture
     elevator/             # Elevator tracker (key habit)
     theater/              # Theater tracker (key habit)
@@ -74,6 +75,7 @@ src/
     analytics/            # Charts + auto-detected correlations
     unlock/               # Passcode screen
     api/coach/route.ts    # OpenAI coach + local fallback
+    api/tts/route.ts      # OpenAI text-to-speech (premium voice) or 204 -> browser fallback
     api/state/route.ts    # Postgres state GET/PUT (single user)
     api/auth/route.ts     # Passcode -> HttpOnly cookie
     layout.tsx            # Root layout: BottomNav, PWARegister, SyncProvider
@@ -82,9 +84,10 @@ src/
     charts/               # TrendChart (Recharts wrapper)
     ui/                   # Card, Button, Slider, Chip, Progress
     HydrationGate, BottomNav, PageHeader, PressureMeter, StatTile,
-    VoiceField, SyncProvider, PWARegister
+    VoiceField, VoiceChat, SyncProvider, PWARegister
   lib/
     types.ts              # Domain model
+    routine.ts            # Morning Ritual: stretch sequence, walk targets, streak
     store.ts              # Zustand + persistence
     codewords.ts          # The private language (source of truth)
     analytics.ts          # Series + correlation engine (pure functions)
@@ -93,7 +96,8 @@ src/
     auth-token.ts         # Passcode -> cookie token
     utils.ts              # todayKey, uid, greeting, pressureColor, cn
     supabase.ts           # Optional alternative client
-  hooks/useVoice.ts       # Web Speech API
+  hooks/useVoice.ts       # Web Speech API (speech-to-text)
+  hooks/useSpeech.ts      # Text-to-speech: premium /api/tts → browser fallback
   middleware.ts           # Passcode gate
 public/                   # manifest.json, sw.js, icons
 railway.json              # Railway build/deploy

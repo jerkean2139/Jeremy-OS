@@ -22,6 +22,8 @@ export interface WeeklyReview {
   avgSleep: number | null;
   avgReadiness: number | null;
   avgHrv: number | null;
+  avgSteps: number | null;
+  ritualDays: number; // mornings the ritual was completed
   focusPct: number | null;
   topPattern: { label: string; value: number; insight: string } | null;
   topSource: PressureSource | null;
@@ -69,6 +71,8 @@ export function buildWeeklyReview(
   const avgSleep = avg(series.map((p) => p.sleep));
   const avgReadiness = avg(series.map((p) => p.readiness));
   const avgHrv = avg(series.map((p) => p.hrv));
+  const avgSteps = avg(series.map((p) => p.steps));
+  const ritualDays = series.filter((p) => state.days[p.date]?.routine).length;
 
   const sumMountain = series.reduce((s, p) => s + p.pulseMountain, 0);
   const sumNoise = series.reduce((s, p) => s + p.pulseNoise, 0);
@@ -103,6 +107,8 @@ export function buildWeeklyReview(
   if (avgSleep != null) highlights.push(`Average sleep was ${avgSleep}h.`);
   if (avgReadiness != null) highlights.push(`Readiness averaged ${avgReadiness}/100.`);
   if (avgHrv != null) highlights.push(`HRV averaged ${avgHrv}ms.`);
+  if (avgSteps != null) highlights.push(`You averaged ${Math.round(avgSteps).toLocaleString()} steps a day.`);
+  if (ritualDays > 0) highlights.push(`Morning ritual: ${ritualDays} of 7 days.`);
   if (focusPct != null) highlights.push(`${focusPct}% of your Pulses landed on the Mountain.`);
   if (topSource) highlights.push(`Most of the pressure traced back to: ${topSource}.`);
   if (topPattern) highlights.push(topPattern.insight);
@@ -135,6 +141,8 @@ export function buildWeeklyReview(
     avgSleep,
     avgReadiness,
     avgHrv,
+    avgSteps,
+    ritualDays,
     focusPct,
     topPattern,
     topSource,
@@ -155,6 +163,8 @@ export function reviewContext(r: WeeklyReview): string {
     r.avgReadiness != null || r.avgHrv != null
       ? `Recovery — readiness: ${r.avgReadiness ?? "—"}/100, HRV: ${r.avgHrv ?? "—"}ms`
       : "",
+    r.avgSteps != null ? `Avg steps: ${Math.round(r.avgSteps)}` : "",
+    r.ritualDays > 0 ? `Morning ritual done ${r.ritualDays}/7 days` : "",
     r.topSource ? `Main pressure source: ${r.topSource}` : "",
     r.topPattern ? `Pattern: ${r.topPattern.insight}` : "",
     r.bestWin ? `A win named this week: ${r.bestWin}` : "",

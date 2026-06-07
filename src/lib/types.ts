@@ -57,9 +57,19 @@ export interface DayEntry {
   sleepScore?: number; // Oura sleep score, 0-100
   hrv?: number; // overnight HRV, ms
   restingHr?: number; // resting heart rate, bpm
+  steps?: number; // walking steps (morning walk + day)
+  routine?: RoutineLog; // the morning ritual, when completed
   movedMountain?: boolean | null; // set during reflection
   morning?: MorningCheckIn;
   reflection?: DailyReflection;
+}
+
+// The morning ritual: check-in → stretch → walk → complete. Durations in seconds.
+export interface RoutineLog {
+  completedAt: string; // ISO
+  totalSec: number; // whole-ritual elapsed
+  stretchSec: number;
+  walkSec: number;
 }
 
 export interface MorningCheckIn {
@@ -147,7 +157,7 @@ export interface ReminderPrefs {
 
 export const DEFAULT_REMINDERS: ReminderPrefs = {
   pushEnabled: false,
-  morning: { enabled: true, time: "07:30" },
+  morning: { enabled: true, time: "06:00" },
   reflection: { enabled: true, time: "21:00" },
   pulse: { enabled: false, cadenceMin: 60, startTime: "09:00", endTime: "17:00" },
 };

@@ -46,10 +46,16 @@ function Analytics() {
       p.sleep != null ||
       p.focusPct != null ||
       p.readiness != null ||
-      p.hrv != null
+      p.hrv != null ||
+      p.steps != null
   );
   const hasRecovery = series.some(
-    (p) => p.readiness != null || p.sleepScore != null || p.hrv != null || p.restingHr != null
+    (p) =>
+      p.readiness != null ||
+      p.sleepScore != null ||
+      p.hrv != null ||
+      p.restingHr != null ||
+      p.steps != null
   );
 
   return (
@@ -197,6 +203,16 @@ function Analytics() {
                   data={series}
                   series={[
                     { key: "sleepScore", name: "Sleep score", color: "#7fb59b", type: "line" },
+                    { key: "pressure", name: "Pressure", color: "#d99a6c", type: "line", yAxis: "right" },
+                  ]}
+                />
+              </ChartCard>
+
+              <ChartCard title="Walking vs Pressure">
+                <TrendChart
+                  data={series}
+                  series={[
+                    { key: "steps", name: "Steps", color: "#5d9c80", type: "bar" },
                     { key: "pressure", name: "Pressure", color: "#d99a6c", type: "line", yAxis: "right" },
                   ]}
                 />
