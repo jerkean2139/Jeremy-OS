@@ -16,6 +16,7 @@ import {
   activeHabits,
   habitStreak,
   habitDoneToday,
+  habitRecipe,
   voteTotals,
   type VoteSources,
 } from "./habits";
@@ -81,10 +82,11 @@ export function buildCoachContext(input: CoachContextInput): string {
     if (building.length) {
       lines.push("Building:");
       for (const h of building) {
+        const recipe = habitRecipe(h);
         lines.push(
           `  - ${h.name} — ${habitStreak(h)} day(s) strong, ${
             habitDoneToday(h) ? "done today" : "not yet today"
-          }${h.identity ? ` [vote: ${h.identity}]` : ""}`
+          }${h.identity ? ` [vote: ${h.identity}]` : ""}${recipe ? ` [recipe: ${recipe}]` : ""}`
         );
       }
     }

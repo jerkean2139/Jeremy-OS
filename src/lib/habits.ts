@@ -90,6 +90,24 @@ export function activeHabits(habits: Habit[]): Habit[] {
   return habits.filter((h) => !h.archivedAt);
 }
 
+// The implementation intention / habit-stacking recipe, as a natural sentence.
+// "After my morning coffee, I will walk at 07:00 in the neighborhood."
+export function habitRecipe(h: {
+  name: string;
+  stackAfter?: string;
+  cueTime?: string;
+  cuePlace?: string;
+}): string | null {
+  const after = h.stackAfter?.trim();
+  const time = h.cueTime?.trim();
+  const place = h.cuePlace?.trim();
+  if (!after && !time && !place) return null;
+  let s = after ? `After ${after}, I will ${h.name}` : `I will ${h.name}`;
+  if (time) s += ` at ${time}`;
+  if (place) s += ` in ${place}`;
+  return `${s}.`;
+}
+
 // --- Identity votes ---
 // Every recorded good action is a vote for who you're becoming.
 

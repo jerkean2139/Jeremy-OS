@@ -77,6 +77,8 @@ interface StoreActions {
     identity?: string;
     twoMinute?: string;
     stackAfter?: string;
+    cueTime?: string;
+    cuePlace?: string;
     laws?: HabitLaws;
   }) => void;
   updateHabit: (id: string, patch: Partial<Omit<Habit, "id" | "createdAt">>) => void;
@@ -263,6 +265,8 @@ export const useStore = create<Store>()(
               identity: input.identity?.trim() || undefined,
               twoMinute: input.twoMinute?.trim() || undefined,
               stackAfter: input.stackAfter?.trim() || undefined,
+              cueTime: input.cueTime?.trim() || undefined,
+              cuePlace: input.cuePlace?.trim() || undefined,
               laws: input.laws ?? {},
               createdAt: new Date().toISOString(),
               archivedAt: null,
