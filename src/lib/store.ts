@@ -19,6 +19,8 @@ import {
   type HabitKind,
   type KeyHabit,
   type KeyHabitLaws,
+  type ScorecardItem,
+  type ScorecardMark,
   DEFAULT_REMINDERS,
   DEFAULT_SCRIPTURE,
   DEFAULT_KEY_HABIT_LAWS,
@@ -85,6 +87,11 @@ interface StoreActions {
   // Inverted Four Laws strategy for a key habit (Elevator / Theater).
   setKeyHabitLaws: (key: KeyHabit, laws: HabitLaws) => void;
 
+  // Habit Scorecard.
+  addScorecardItem: (text: string, mark: ScorecardMark) => void;
+  updateScorecardItem: (id: string, patch: Partial<Omit<ScorecardItem, "id" | "createdAt">>) => void;
+  removeScorecardItem: (id: string) => void;
+
   completeOnboarding: () => void;
 
   addCoachMessage: (msg: Omit<CoachMessage, "id" | "timestamp">) => void;
@@ -132,6 +139,7 @@ export const useStore = create<Store>()(
       scripture: DEFAULT_SCRIPTURE,
       habits: [],
       keyHabitLaws: DEFAULT_KEY_HABIT_LAWS,
+      scorecard: [],
       onboardedAt: null,
 
       _hydrated: false,
@@ -294,6 +302,26 @@ export const useStore = create<Store>()(
           keyHabitLaws: { ...(s.keyHabitLaws ?? DEFAULT_KEY_HABIT_LAWS), [key]: laws },
         })),
 
+      addScorecardItem: (text, mark) =>
+        set((s) => {
+          const t = text.trim();
+          if (!t) return {};
+          return {
+            scorecard: [
+              ...(s.scorecard ?? []),
+              { id: uid(), text: t, mark, createdAt: new Date().toISOString() },
+            ],
+          };
+        }),
+
+      updateScorecardItem: (id, patch) =>
+        set((s) => ({
+          scorecard: (s.scorecard ?? []).map((i) => (i.id === id ? { ...i, ...patch } : i)),
+        })),
+
+      removeScorecardItem: (id) =>
+        set((s) => ({ scorecard: (s.scorecard ?? []).filter((i) => i.id !== id) })),
+
       completeOnboarding: () => set({ onboardedAt: new Date().toISOString() }),
 
       addCoachMessage: (msg) =>
@@ -330,6 +358,7 @@ export const useStore = create<Store>()(
           scripture: data.scripture ?? s.scripture,
           habits: data.habits ?? s.habits,
           keyHabitLaws: data.keyHabitLaws ?? s.keyHabitLaws,
+          scorecard: data.scorecard ?? s.scorecard,
           onboardedAt: data.onboardedAt ?? s.onboardedAt,
         })),
     }),
@@ -349,6 +378,7 @@ export const useStore = create<Store>()(
         scripture: s.scripture,
         habits: s.habits,
         keyHabitLaws: s.keyHabitLaws,
+        scorecard: s.scorecard,
         onboardedAt: s.onboardedAt,
       }),
       onRehydrateStorage: () => (state) => {

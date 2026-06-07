@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import {
   Plus,
   Check,
@@ -13,6 +14,7 @@ import {
   X,
   RotateCcw,
   Target,
+  ListChecks,
 } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { HydrationGate } from "@/components/HydrationGate";
@@ -75,10 +77,23 @@ function Habits() {
         <HabitEditor habit={editing} onClose={() => setEditorOpen(false)} />
       ) : (
         <>
-          <p className="mb-5 rounded-xl border border-sage-500/20 bg-sage-500/5 px-4 py-3 text-sm leading-relaxed text-mist-300">
+          <p className="mb-4 rounded-xl border border-sage-500/20 bg-sage-500/5 px-4 py-3 text-sm leading-relaxed text-mist-300">
             You don&apos;t rise to your goals, you fall to your systems. Design each habit with the
             four laws — then let small reps compound. <span className="text-mist-400">Never miss twice.</span>
           </p>
+
+          <Link
+            href="/scorecard"
+            className="mb-5 flex items-center gap-3 rounded-2xl border border-ink-700/60 bg-ink-850/70 p-4 transition-colors hover:border-ink-600 hover:bg-ink-800"
+          >
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-ink-800/70">
+              <ListChecks className="h-5 w-5 text-sky-400" />
+            </div>
+            <div className="flex-1">
+              <div className="text-sm font-medium text-mist-100">Habit Scorecard</div>
+              <div className="text-xs text-mist-500">See your current habits clearly — no judgment</div>
+            </div>
+          </Link>
 
           {active.length === 0 ? (
             <Card>

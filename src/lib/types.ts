@@ -153,6 +153,17 @@ export const DEFAULT_KEY_HABIT_LAWS: KeyHabitLaws = {
   theater: {},
 };
 
+// Habit Scorecard — Clear's awareness exercise: list your current daily
+// habits and mark each relative to who you want to become. No judgment.
+export type ScorecardMark = "good" | "neutral" | "bad"; // + / = / −
+
+export interface ScorecardItem {
+  id: string;
+  text: string;
+  mark: ScorecardMark;
+  createdAt: string; // ISO
+}
+
 // One-year Bible reading plan progress. Self-paced: `currentDay` is how far
 // you've read (1..365), not the calendar — no guilt, only forward motion.
 export interface ScriptureProgress {
@@ -231,6 +242,8 @@ export interface JeremyState {
   habits: Habit[];
   // Inverted Four Laws strategy for the two key habits.
   keyHabitLaws: KeyHabitLaws;
+  // Habit Scorecard — awareness inventory of current habits.
+  scorecard: ScorecardItem[];
   // ISO timestamp of when first-run onboarding was completed; null until then.
   onboardedAt?: string | null;
 }

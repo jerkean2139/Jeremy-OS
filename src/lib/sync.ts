@@ -31,6 +31,7 @@ const DATA_KEYS = [
   "scripture",
   "habits",
   "keyHabitLaws",
+  "scorecard",
   "onboardedAt",
 ] as const;
 
@@ -48,6 +49,7 @@ function snapshot(state: Store): JeremyState {
     scripture: state.scripture,
     habits: state.habits,
     keyHabitLaws: state.keyHabitLaws,
+    scorecard: state.scorecard,
     onboardedAt: state.onboardedAt,
   };
 }
