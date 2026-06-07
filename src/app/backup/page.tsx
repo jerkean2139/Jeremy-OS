@@ -57,6 +57,7 @@ function Backup() {
     coachHistory: store.coachHistory,
     coachMemory: store.coachMemory,
     reminders: store.reminders,
+    scripture: store.scripture,
   });
 
   const exportJson = () => {

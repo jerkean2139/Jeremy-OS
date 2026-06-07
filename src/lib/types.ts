@@ -114,6 +114,19 @@ export interface IdentityStatement {
   lines: string[];
 }
 
+// One-year Bible reading plan progress. Self-paced: `currentDay` is how far
+// you've read (1..365), not the calendar — no guilt, only forward motion.
+export interface ScriptureProgress {
+  currentDay: number; // the active reading day, 1-based
+  lastReadDate?: string; // YYYY-MM-DD of the most recent completion
+  readLog: { date: string; day: number }[]; // each completed reading
+}
+
+export const DEFAULT_SCRIPTURE: ScriptureProgress = {
+  currentDay: 1,
+  readLog: [],
+};
+
 // Pulse = a 15-minute awareness check. "Am I on the Mountain or in the Noise?"
 export type PulseTag = "mountain" | "noise" | "admin";
 
@@ -173,6 +186,8 @@ export interface JeremyState {
   // Durable facts the coach carries between sessions (editable; fed into every reply).
   coachMemory: string[];
   reminders: ReminderPrefs;
+  // One-year Bible reading plan progress.
+  scripture: ScriptureProgress;
   // ISO timestamp of when first-run onboarding was completed; null until then.
   onboardedAt?: string | null;
 }

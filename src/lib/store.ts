@@ -13,8 +13,11 @@ import {
   type CoachMessage,
   type PulseEntry,
   type ReminderPrefs,
+  type ScriptureProgress,
   DEFAULT_REMINDERS,
+  DEFAULT_SCRIPTURE,
 } from "./types";
+import { clampDay } from "./bible";
 import { DEFAULT_IDENTITY } from "./codewords";
 import { todayKey, uid } from "./utils";
 
@@ -54,6 +57,10 @@ interface StoreActions {
   setManumation: (patch: Partial<ManumationState>) => void;
 
   setReminders: (patch: Partial<ReminderPrefs>) => void;
+
+  // Bible reading plan: advance after a reading, or jump to a specific day.
+  markScriptureRead: () => void;
+  setScriptureDay: (day: number) => void;
 
   completeOnboarding: () => void;
 
@@ -99,6 +106,7 @@ export const useStore = create<Store>()(
       coachHistory: [],
       coachMemory: [],
       reminders: DEFAULT_REMINDERS,
+      scripture: DEFAULT_SCRIPTURE,
       onboardedAt: null,
 
       _hydrated: false,
@@ -190,6 +198,27 @@ export const useStore = create<Store>()(
       setReminders: (patch) =>
         set((s) => ({ reminders: { ...s.reminders, ...patch } })),
 
+      markScriptureRead: () =>
+        set((s) => {
+          const sc = s.scripture ?? DEFAULT_SCRIPTURE;
+          const date = todayKey();
+          const day = clampDay(sc.currentDay);
+          // Don't double-log the same day's reading.
+          const already = sc.readLog.some((r) => r.day === day);
+          return {
+            scripture: {
+              currentDay: clampDay(day + 1),
+              lastReadDate: date,
+              readLog: already ? sc.readLog : [...sc.readLog, { date, day }],
+            },
+          };
+        }),
+
+      setScriptureDay: (day) =>
+        set((s) => ({
+          scripture: { ...(s.scripture ?? DEFAULT_SCRIPTURE), currentDay: clampDay(day) },
+        })),
+
       completeOnboarding: () => set({ onboardedAt: new Date().toISOString() }),
 
       addCoachMessage: (msg) =>
@@ -223,6 +252,7 @@ export const useStore = create<Store>()(
           coachHistory: data.coachHistory ?? s.coachHistory,
           coachMemory: data.coachMemory ?? s.coachMemory,
           reminders: data.reminders ?? s.reminders,
+          scripture: data.scripture ?? s.scripture,
           onboardedAt: data.onboardedAt ?? s.onboardedAt,
         })),
     }),
@@ -239,6 +269,7 @@ export const useStore = create<Store>()(
         coachHistory: s.coachHistory,
         coachMemory: s.coachMemory,
         reminders: s.reminders,
+        scripture: s.scripture,
         onboardedAt: s.onboardedAt,
       }),
       onRehydrateStorage: () => (state) => {
