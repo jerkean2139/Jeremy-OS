@@ -1,9 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { Building2, Theater as TheaterIcon, Flame, Sunrise, Moon, Timer, Bell, History, Database, Search, CalendarRange, Check } from "lucide-react";
+import { Building2, Theater as TheaterIcon, Flame, Sunrise, Moon, Timer, Bell, History, Database, Search, CalendarRange, Check, Repeat } from "lucide-react";
 import { HydrationGate } from "@/components/HydrationGate";
 import { MissionControl } from "@/components/dashboard/MissionControl";
+import { IdentityVotesCard } from "@/components/dashboard/IdentityVotesCard";
+import { NeverMissTwiceCard } from "@/components/dashboard/NeverMissTwiceCard";
 import { MountainCard } from "@/components/dashboard/MountainCard";
 import { PressureCard } from "@/components/dashboard/PressureCard";
 import { VitalsCard } from "@/components/dashboard/VitalsCard";
@@ -14,6 +16,7 @@ import { StatTile } from "@/components/StatTile";
 import { useStore } from "@/lib/store";
 import { MISSION_STATEMENT } from "@/lib/codewords";
 import { calcElevatorFreeStreak, floorsOn, actsOn } from "@/lib/analytics";
+import { activeHabits, habitDoneToday } from "@/lib/habits";
 import { calcRoutineStreak } from "@/lib/routine";
 import { greeting, todayKey, pressureColor } from "@/lib/utils";
 
@@ -30,6 +33,11 @@ function Dashboard() {
   const elevatorLogs = useStore((s) => s.elevatorLogs);
   const theaterLogs = useStore((s) => s.theaterLogs);
   const days = useStore((s) => s.days);
+  const habits = useStore((s) => s.habits);
+
+  const buildHabits = activeHabits(habits ?? []).filter((h) => h.kind === "build");
+  const buildCount = buildHabits.length;
+  const buildDone = buildHabits.filter((h) => habitDoneToday(h)).length;
 
   const key = todayKey();
   const floors = floorsOn(elevatorLogs, key);
@@ -89,6 +97,12 @@ function Dashboard() {
 
       {/* Section 1 */}
       <MissionControl />
+
+      {/* Identity in motion — every action is a vote */}
+      <IdentityVotesCard />
+
+      {/* Never miss twice — calm recovery, only when relevant */}
+      <NeverMissTwiceCard />
 
       {/* Morning Ritual — the 6am anchor */}
       <Link
@@ -159,6 +173,24 @@ function Dashboard() {
         <div className="flex-1">
           <div className="text-sm font-medium text-mist-100">Start a Pulse</div>
           <div className="text-xs text-mist-500">15-min check: Mountain or Noise?</div>
+        </div>
+      </Link>
+
+      {/* Habits — design the system, cast the votes */}
+      <Link
+        href="/habits"
+        className="flex items-center gap-3 rounded-2xl border border-ink-700/60 bg-gradient-to-br from-sage-500/10 to-sky-500/5 p-4 transition-colors hover:border-ink-600"
+      >
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-ink-800/70">
+          <Repeat className="h-5 w-5 text-sage-400" />
+        </div>
+        <div className="flex-1">
+          <div className="text-sm font-medium text-mist-100">Habits</div>
+          <div className="text-xs text-mist-500">
+            {buildCount > 0
+              ? `${buildDone}/${buildCount} done today · the four laws`
+              : "Build & break habits with the four laws"}
+          </div>
         </div>
       </Link>
 
