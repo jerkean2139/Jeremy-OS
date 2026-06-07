@@ -114,6 +114,34 @@ export interface IdentityStatement {
   lines: string[];
 }
 
+// --- Atomic Habits layer ---
+// A user-defined habit, designed with James Clear's Four Laws. For habits
+// you're building the laws are read straight (obvious/attractive/easy/
+// satisfying); for habits you're breaking they're the inversion
+// (invisible/unattractive/difficult/unsatisfying).
+export type HabitKind = "build" | "break";
+
+export interface HabitLaws {
+  obvious?: string; // 1st law: make it obvious / invisible (the cue)
+  attractive?: string; // 2nd law: make it attractive / unattractive (the craving)
+  easy?: string; // 3rd law: make it easy / difficult (the response)
+  satisfying?: string; // 4th law: make it satisfying / unsatisfying (the reward)
+}
+
+export interface Habit {
+  id: string;
+  name: string;
+  kind: HabitKind;
+  identity?: string; // "the kind of person who…"
+  twoMinute?: string; // the two-minute version
+  stackAfter?: string; // habit-stacking anchor: "After I ___, I will ___"
+  laws: HabitLaws;
+  createdAt: string; // ISO
+  archivedAt?: string | null;
+  // For "build": dateKeys the habit was done. For "break": dateKeys it slipped.
+  log: string[];
+}
+
 // One-year Bible reading plan progress. Self-paced: `currentDay` is how far
 // you've read (1..365), not the calendar — no guilt, only forward motion.
 export interface ScriptureProgress {
@@ -188,6 +216,8 @@ export interface JeremyState {
   reminders: ReminderPrefs;
   // One-year Bible reading plan progress.
   scripture: ScriptureProgress;
+  // Atomic Habits: user-defined habits to build or break.
+  habits: Habit[];
   // ISO timestamp of when first-run onboarding was completed; null until then.
   onboardedAt?: string | null;
 }

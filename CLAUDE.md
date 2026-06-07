@@ -71,6 +71,7 @@ src/
     theater/              # Theater tracker (key habit)
     reflection/           # Evening reflection
     scripture/            # Daily Word: one-year Bible plan (OT+NT) + AI "what it means"
+    habits/               # Atomic Habits hub: build/break habits via the 4 Laws
     coach/                # AI Recovery Coach
     manumation/           # Launch command center (Distance to Launch)
     analytics/            # Charts + auto-detected correlations
@@ -92,6 +93,7 @@ src/
     types.ts              # Domain model
     routine.ts            # Morning Ritual: stretch sequence, walk targets, streak
     bible.ts              # One-year Bible reading plan (OT+NT daily), pure functions
+    habits.ts             # Atomic Habits: streaks, "never miss twice", identity votes
     store.ts              # Zustand + persistence
     codewords.ts          # The private language (source of truth)
     analytics.ts          # Series + correlation engine (pure functions)

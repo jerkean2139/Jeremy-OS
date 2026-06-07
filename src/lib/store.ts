@@ -14,6 +14,9 @@ import {
   type PulseEntry,
   type ReminderPrefs,
   type ScriptureProgress,
+  type Habit,
+  type HabitLaws,
+  type HabitKind,
   DEFAULT_REMINDERS,
   DEFAULT_SCRIPTURE,
 } from "./types";
@@ -62,6 +65,20 @@ interface StoreActions {
   markScriptureRead: () => void;
   setScriptureDay: (day: number) => void;
 
+  // Atomic Habits.
+  addHabit: (input: {
+    name: string;
+    kind: HabitKind;
+    identity?: string;
+    twoMinute?: string;
+    stackAfter?: string;
+    laws?: HabitLaws;
+  }) => void;
+  updateHabit: (id: string, patch: Partial<Omit<Habit, "id" | "createdAt">>) => void;
+  archiveHabit: (id: string) => void;
+  deleteHabit: (id: string) => void;
+  toggleHabitDay: (id: string, date?: string) => void;
+
   completeOnboarding: () => void;
 
   addCoachMessage: (msg: Omit<CoachMessage, "id" | "timestamp">) => void;
@@ -107,6 +124,7 @@ export const useStore = create<Store>()(
       coachMemory: [],
       reminders: DEFAULT_REMINDERS,
       scripture: DEFAULT_SCRIPTURE,
+      habits: [],
       onboardedAt: null,
 
       _hydrated: false,
@@ -219,6 +237,51 @@ export const useStore = create<Store>()(
           scripture: { ...(s.scripture ?? DEFAULT_SCRIPTURE), currentDay: clampDay(day) },
         })),
 
+      addHabit: (input) =>
+        set((s) => ({
+          habits: [
+            ...(s.habits ?? []),
+            {
+              id: uid(),
+              name: input.name.trim(),
+              kind: input.kind,
+              identity: input.identity?.trim() || undefined,
+              twoMinute: input.twoMinute?.trim() || undefined,
+              stackAfter: input.stackAfter?.trim() || undefined,
+              laws: input.laws ?? {},
+              createdAt: new Date().toISOString(),
+              archivedAt: null,
+              log: [],
+            },
+          ],
+        })),
+
+      updateHabit: (id, patch) =>
+        set((s) => ({
+          habits: (s.habits ?? []).map((h) => (h.id === id ? { ...h, ...patch } : h)),
+        })),
+
+      archiveHabit: (id) =>
+        set((s) => ({
+          habits: (s.habits ?? []).map((h) =>
+            h.id === id ? { ...h, archivedAt: new Date().toISOString() } : h
+          ),
+        })),
+
+      deleteHabit: (id) =>
+        set((s) => ({ habits: (s.habits ?? []).filter((h) => h.id !== id) })),
+
+      toggleHabitDay: (id, date) => {
+        const key = date ?? todayKey();
+        set((s) => ({
+          habits: (s.habits ?? []).map((h) => {
+            if (h.id !== id) return h;
+            const has = h.log.includes(key);
+            return { ...h, log: has ? h.log.filter((d) => d !== key) : [...h.log, key] };
+          }),
+        }));
+      },
+
       completeOnboarding: () => set({ onboardedAt: new Date().toISOString() }),
 
       addCoachMessage: (msg) =>
@@ -253,6 +316,7 @@ export const useStore = create<Store>()(
           coachMemory: data.coachMemory ?? s.coachMemory,
           reminders: data.reminders ?? s.reminders,
           scripture: data.scripture ?? s.scripture,
+          habits: data.habits ?? s.habits,
           onboardedAt: data.onboardedAt ?? s.onboardedAt,
         })),
     }),
@@ -270,6 +334,7 @@ export const useStore = create<Store>()(
         coachMemory: s.coachMemory,
         reminders: s.reminders,
         scripture: s.scripture,
+        habits: s.habits,
         onboardedAt: s.onboardedAt,
       }),
       onRehydrateStorage: () => (state) => {
