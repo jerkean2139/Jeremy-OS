@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Building2, Theater as TheaterIcon, Flame, Sunrise, Moon, Timer, Bell, History, Database, Search, CalendarRange, Check, Repeat } from "lucide-react";
 import { HydrationGate } from "@/components/HydrationGate";
 import { MissionControl } from "@/components/dashboard/MissionControl";
-import { TodayFocus } from "@/components/dashboard/TodayFocus";
+import { TodayPath } from "@/components/dashboard/TodayPath";
 import { IdentityVotesCard } from "@/components/dashboard/IdentityVotesCard";
 import { NeverMissTwiceCard } from "@/components/dashboard/NeverMissTwiceCard";
 import { MountainCard } from "@/components/dashboard/MountainCard";
@@ -96,8 +96,8 @@ function Dashboard() {
         </div>
       </div>
 
-      {/* Glanceable focus — votes + the one next move */}
-      <TodayFocus />
+      {/* Guided checklist — take it one step at a time */}
+      <TodayPath />
 
       {/* Section 1 */}
       <MissionControl />
