@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isDbConfigured, readState, claimSend } from "@/lib/db";
 import { isPushConfigured, sendToAll } from "@/lib/push-server";
-import { type ReminderPrefs } from "@/lib/types";
+import { type ReminderPrefs, type Habit } from "@/lib/types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -48,6 +48,20 @@ export async function GET(req: NextRequest) {
     }
   }
 
+  // Habits: a single daily nudge to do the day's build habits — but only when
+  // some are still undone (never nag once they're all cast).
+  const habitsR = reminders.habits;
+  if (habitsR?.enabled && isDue(minutes, habitsR.time)) {
+    const habits = (data?.habits as Habit[] | undefined) ?? [];
+    const remaining = habits.filter(
+      (h) => !h.archivedAt && h.kind === "build" && !h.log.includes(dateKey)
+    );
+    if (remaining.length > 0 && (await claimSend("habits", dateKey))) {
+      await sendToAll(habitPayload(remaining));
+      sent.push("habits");
+    }
+  }
+
   // Pulse: repeating within an active window, aligned to the cadence.
   const pulse = reminders.pulse;
   if (pulse?.enabled && withinWindow(minutes, pulse.startTime, pulse.endTime)) {
@@ -84,6 +98,21 @@ function payloadFor(name: "morning" | "reflection") {
         url: "/reflection",
         tag: "jeremy-os-reflection",
       };
+}
+
+function habitPayload(remaining: Habit[]) {
+  const n = remaining.length;
+  // Lead with one habit's two-minute version when we have it, to lower the bar.
+  const lead = remaining.find((h) => h.twoMinute)?.twoMinute;
+  const body = lead
+    ? `Start tiny: ${lead}. ${n} habit${n === 1 ? "" : "s"} left — every rep is a vote.`
+    : `${n} habit${n === 1 ? "" : "s"} left today. Just the two-minute version counts.`;
+  return {
+    title: "A small vote",
+    body,
+    url: "/habits",
+    tag: "jeremy-os-habits",
+  };
 }
 
 function toMinutes(hhmm: string): number {
