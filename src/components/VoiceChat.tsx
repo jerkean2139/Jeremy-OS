@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Mic, Square, Volume2, Loader2 } from "lucide-react";
 import { useVoice } from "@/hooks/useVoice";
+import { useRecorder } from "@/hooks/useRecorder";
 import { useSpeech } from "@/hooks/useSpeech";
 import { cn } from "@/lib/utils";
 
@@ -11,9 +12,20 @@ interface Turn {
   content: string;
 }
 
-// A hands-free, back-and-forth voice conversation with the coach. Listens via
-// the Web Speech API, replies via /api/coach, and speaks the reply with the
-// premium-or-fallback voice. Kept separate from the persisted coach history.
+type Mode = "speech" | "record" | "none";
+
+function isIOS(): boolean {
+  if (typeof navigator === "undefined") return false;
+  return (
+    /iP(hone|ad|od)/.test(navigator.userAgent) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)
+  );
+}
+
+// A hands-free, back-and-forth voice conversation with the coach.
+// Listening uses the best path per device — Whisper (/api/transcribe via the
+// recorder) on iOS where Web Speech fails, on-device Web Speech elsewhere.
+// Replies come from /api/coach and are spoken with the premium-or-fallback voice.
 export function VoiceChat({
   context,
   memory,
@@ -23,12 +35,27 @@ export function VoiceChat({
   memory?: string[];
   opener?: string;
 }) {
-  const { supported, listening, transcript, start, stop, reset } = useVoice();
+  const speech = useVoice();
+  const recorder = useRecorder();
   const { speak, cancel, speaking } = useSpeech();
+  const [mode, setMode] = useState<Mode>("none");
   const [turns, setTurns] = useState<Turn[]>([]);
   const [thinking, setThinking] = useState(false);
   const [started, setStarted] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
+
+  // Pick the best available input path once mounted (client-only APIs).
+  useEffect(() => {
+    if (isIOS()) {
+      setMode(recorder.supported ? "record" : speech.supported ? "speech" : "none");
+    } else if (speech.supported) {
+      setMode("speech");
+    } else if (recorder.supported) {
+      setMode("record");
+    } else {
+      setMode("none");
+    }
+  }, [speech.supported, recorder.supported]);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -42,16 +69,26 @@ export function VoiceChat({
     speak(opener);
   };
 
-  const onMic = () => {
-    if (listening) {
-      stop();
-      const said = transcript.trim();
-      if (said) sendTurn(said);
-      reset();
-    } else {
-      cancel();
-      reset();
-      start();
+  const onMic = async () => {
+    if (mode === "speech") {
+      if (speech.listening) {
+        speech.stop();
+        const said = speech.transcript.trim();
+        if (said) sendTurn(said);
+        speech.reset();
+      } else {
+        cancel();
+        speech.reset();
+        speech.start();
+      }
+    } else if (mode === "record") {
+      if (recorder.recording) {
+        const said = (await recorder.stopAndTranscribe())?.trim();
+        if (said) sendTurn(said);
+      } else {
+        cancel();
+        await recorder.start();
+      }
     }
   };
 
@@ -95,6 +132,9 @@ export function VoiceChat({
     );
   }
 
+  const listening = mode === "speech" ? speech.listening : recorder.recording;
+  const busy = mode === "record" && recorder.transcribing;
+
   return (
     <div className="rounded-2xl border border-ink-700/60 bg-ink-900/50 p-4">
       <div className="max-h-56 space-y-2.5 overflow-y-auto">
@@ -111,16 +151,23 @@ export function VoiceChat({
             {t.content}
           </div>
         ))}
-        {(thinking || listening) && (
+        {(thinking || listening || busy) && (
           <div className="flex items-center gap-2 text-xs text-mist-500">
             {thinking ? (
               <>
                 <Loader2 className="h-3.5 w-3.5 animate-spin" /> thinking…
               </>
+            ) : busy ? (
+              <>
+                <Loader2 className="h-3.5 w-3.5 animate-spin" /> transcribing…
+              </>
             ) : (
               <>
                 <span className="h-2 w-2 animate-pulse rounded-full bg-ember-400" />
-                listening… {transcript && <span className="text-mist-400">“{transcript}”</span>}
+                listening…
+                {mode === "speech" && speech.transcript && (
+                  <span className="text-mist-400">“{speech.transcript}”</span>
+                )}
               </>
             )}
           </div>
@@ -129,20 +176,27 @@ export function VoiceChat({
       </div>
 
       <div className="mt-3 flex items-center justify-center gap-3">
-        {!supported ? (
+        {mode === "none" ? (
           <p className="text-xs text-mist-500">Voice input isn’t supported on this browser.</p>
         ) : (
           <button
             onClick={onMic}
+            disabled={busy}
             className={cn(
-              "flex h-14 w-14 items-center justify-center rounded-full transition-colors",
+              "flex h-14 w-14 items-center justify-center rounded-full transition-colors disabled:opacity-60",
               listening
                 ? "bg-ember-500/20 text-ember-300 ring-2 ring-ember-400/50"
                 : "bg-sage-500/20 text-sage-300 hover:bg-sage-500/30"
             )}
-            aria-label={listening ? "Stop and send" : "Hold to talk"}
+            aria-label={listening ? "Stop and send" : "Tap to talk"}
           >
-            {listening ? <Square className="h-5 w-5" /> : <Mic className="h-6 w-6" />}
+            {busy ? (
+              <Loader2 className="h-6 w-6 animate-spin" />
+            ) : listening ? (
+              <Square className="h-5 w-5" />
+            ) : (
+              <Mic className="h-6 w-6" />
+            )}
           </button>
         )}
         {speaking && (
@@ -157,6 +211,9 @@ export function VoiceChat({
       <p className="mt-2 text-center text-[11px] text-mist-600">
         {listening ? "Tap to send" : "Tap the mic, speak, tap again"}
       </p>
+      {recorder.error && mode === "record" && (
+        <p className="mt-1 text-center text-[11px] text-ember-400">{recorder.error}</p>
+      )}
     </div>
   );
 }
