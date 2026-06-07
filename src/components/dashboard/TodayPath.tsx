@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/Card";
 import { useStore } from "@/lib/store";
-import { activeHabits, habitMarkedOn } from "@/lib/habits";
+import { activeHabits, habitMarkedOn, habitRecipe } from "@/lib/habits";
 import { todayKey, cn } from "@/lib/utils";
 
 interface Step {
@@ -66,7 +66,7 @@ export function TodayPath() {
       list.push({
         id: `habit-${h.id}`,
         title: h.name,
-        hint: h.twoMinute || h.identity || "A small vote",
+        hint: habitRecipe(h) || h.twoMinute || h.identity || "A small vote",
         icon: Repeat,
         done: habitMarkedOn(h, key),
         action: () => toggleHabitDay(h.id),

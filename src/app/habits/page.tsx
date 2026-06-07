@@ -15,6 +15,7 @@ import {
   RotateCcw,
   Target,
   ListChecks,
+  Link2,
 } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { HydrationGate } from "@/components/HydrationGate";
@@ -22,7 +23,7 @@ import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { useStore } from "@/lib/store";
 import type { Habit, HabitKind, HabitLaws } from "@/lib/types";
-import { activeHabits, habitDoneToday, habitStreak, missState } from "@/lib/habits";
+import { activeHabits, habitDoneToday, habitStreak, missState, habitRecipe } from "@/lib/habits";
 import { cn } from "@/lib/utils";
 
 const inputCls =
@@ -167,7 +168,8 @@ function HabitRow({ habit, onEdit }: { habit: Habit; onEdit: () => void }) {
   const miss = missState(habit);
 
   const laws = LAW_FIELDS[habit.kind].filter((f) => habit.laws[f.key]);
-  const hasDetail = laws.length > 0 || habit.twoMinute || habit.stackAfter;
+  const recipe = habitRecipe(habit);
+  const hasDetail = laws.length > 0 || habit.twoMinute || !!recipe;
 
   const streakLabel = isBuild
     ? `${streak} day${streak === 1 ? "" : "s"} strong`
@@ -204,6 +206,11 @@ function HabitRow({ habit, onEdit }: { habit: Habit; onEdit: () => void }) {
             <div className="text-sm font-medium text-mist-100">{habit.name}</div>
             {habit.identity && (
               <div className="text-xs italic text-sage-400/90">{habit.identity}</div>
+            )}
+            {recipe && (
+              <div className="mt-0.5 flex items-start gap-1 text-xs text-sky-300/90">
+                <Link2 className="mt-0.5 h-3 w-3 shrink-0" /> {recipe}
+              </div>
             )}
             <div className="mt-1 flex items-center gap-1.5 text-xs text-mist-500">
               <Flame className={cn("h-3.5 w-3.5", streak > 0 ? "text-ember-400" : "text-mist-600")} />
@@ -242,9 +249,7 @@ function HabitRow({ habit, onEdit }: { habit: Habit; onEdit: () => void }) {
             </button>
             {open && (
               <div className="mt-2 space-y-2 border-t border-ink-700/60 pt-3 text-sm">
-                {habit.stackAfter && (
-                  <Detail label="Habit stack">{habit.stackAfter}</Detail>
-                )}
+                {recipe && <Detail label="Habit recipe">{recipe}</Detail>}
                 {habit.twoMinute && (
                   <Detail label="Two-minute version">{habit.twoMinute}</Detail>
                 )}
@@ -286,16 +291,20 @@ function HabitEditor({ habit, onClose }: { habit: Habit | null; onClose: () => v
   const [identity, setIdentity] = useState(habit?.identity ?? "");
   const [twoMinute, setTwoMinute] = useState(habit?.twoMinute ?? "");
   const [stackAfter, setStackAfter] = useState(habit?.stackAfter ?? "");
+  const [cueTime, setCueTime] = useState(habit?.cueTime ?? "");
+  const [cuePlace, setCuePlace] = useState(habit?.cuePlace ?? "");
   const [laws, setLaws] = useState<HabitLaws>(habit?.laws ?? {});
 
   const canSave = name.trim().length > 0;
+  const recipePreview = habitRecipe({ name: name || "this", stackAfter, cueTime, cuePlace });
 
   const save = () => {
     if (!canSave) return;
+    const fields = { name, kind, identity, twoMinute, stackAfter, cueTime, cuePlace, laws };
     if (habit) {
-      updateHabit(habit.id, { name, kind, identity, twoMinute, stackAfter, laws });
+      updateHabit(habit.id, fields);
     } else {
-      addHabit({ name, kind, identity, twoMinute, stackAfter, laws });
+      addHabit(fields);
     }
     onClose();
   };
@@ -344,15 +353,6 @@ function HabitEditor({ habit, onClose }: { habit: Habit | null; onClose: () => v
             />
           </Field>
 
-          <Field label="Habit stack" hint="After I ___, I will…">
-            <input
-              className={inputCls}
-              value={stackAfter}
-              onChange={(e) => setStackAfter(e.target.value)}
-              placeholder="After I finish my morning coffee, I will…"
-            />
-          </Field>
-
           <Field label="Two-minute version" hint="Scale it down so it's impossible to skip">
             <input
               className={inputCls}
@@ -361,6 +361,54 @@ function HabitEditor({ habit, onClose }: { habit: Habit | null; onClose: () => v
               placeholder={kind === "build" ? "Put on my walking shoes" : "Phone in another room"}
             />
           </Field>
+        </CardContent>
+      </Card>
+
+      {/* Habit recipe — implementation intention + stacking */}
+      <Card>
+        <CardContent className="space-y-4 pt-5">
+          <div>
+            <div className="text-[11px] font-medium uppercase tracking-[0.16em] text-mist-500">
+              Habit recipe
+            </div>
+            <div className="mb-1 text-xs text-mist-600">
+              When &amp; where it happens — make the cue obvious.
+            </div>
+          </div>
+
+          <Field label="After…" hint="an anchor you already do (habit stacking)">
+            <input
+              className={inputCls}
+              value={stackAfter}
+              onChange={(e) => setStackAfter(e.target.value)}
+              placeholder="my morning coffee"
+            />
+          </Field>
+
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="At (time)">
+              <input
+                type="time"
+                className={inputCls}
+                value={cueTime}
+                onChange={(e) => setCueTime(e.target.value)}
+              />
+            </Field>
+            <Field label="In (place)">
+              <input
+                className={inputCls}
+                value={cuePlace}
+                onChange={(e) => setCuePlace(e.target.value)}
+                placeholder="the kitchen"
+              />
+            </Field>
+          </div>
+
+          {recipePreview && (
+            <p className="rounded-lg bg-sky-500/5 px-3 py-2 text-sm italic text-sky-200/90">
+              {recipePreview}
+            </p>
+          )}
         </CardContent>
       </Card>
 

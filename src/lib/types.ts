@@ -134,7 +134,11 @@ export interface Habit {
   kind: HabitKind;
   identity?: string; // "the kind of person who…"
   twoMinute?: string; // the two-minute version
-  stackAfter?: string; // habit-stacking anchor: "After I ___, I will ___"
+  // Implementation intention / habit stacking: "After [stackAfter], I will
+  // [name] at [cueTime] in [cuePlace]." Any part is optional.
+  stackAfter?: string; // an anchor habit you already do
+  cueTime?: string; // "HH:MM"
+  cuePlace?: string; // a location
   laws: HabitLaws;
   createdAt: string; // ISO
   archivedAt?: string | null;
