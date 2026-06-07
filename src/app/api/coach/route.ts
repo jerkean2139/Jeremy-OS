@@ -23,7 +23,7 @@ PRIMARY JOB: help him see patterns between Pressure, Elevator, Theater, producti
 STYLE: short. Mobile-readable. 2-5 sentences unless asked for more. Speak to him as "you". End with awareness or one small action, not a lecture.`;
 
 interface Body {
-  mode?: "chat" | "summary";
+  mode?: "chat" | "summary" | "insight";
   text?: string;
   messages?: { role: "user" | "assistant"; content: string }[];
   context?: string;
@@ -56,6 +56,13 @@ export async function POST(req: NextRequest) {
       messages.push({
         role: "user",
         content: `Reflect this morning check-in back in 2-3 calm sentences. Name the mountain and the pressure, then one grounding line.\n\n${body.text ?? ""}`,
+      });
+    } else if (body.mode === "insight") {
+      messages.push({
+        role: "user",
+        content: `Looking at the data above, surface ONE proactive insight he hasn't asked for — the single most useful thing to notice today. 2-3 calm sentences, then one small concrete action. No greeting, no preamble, no shame. ${
+          body.text ? `A draft observation to refine (keep its meaning): ${body.text}` : ""
+        }`,
       });
     } else if (body.messages?.length) {
       messages.push(...body.messages);
@@ -94,6 +101,11 @@ function localEngine(body: Body): string {
     const t = (body.text ?? "").replace(/\n+/g, " ").trim();
     if (!t) return "A quiet start. Name your mountain, name the pressure, then take the first step.";
     return `Here's your morning, reflected back: ${t}. One mountain. Let the rest be noise. Take the first small step now.`;
+  }
+
+  // For insights, the deterministic engine already wrote a good line — pass it through.
+  if (body.mode === "insight") {
+    return (body.text ?? "").trim() || "Steady as you are. Pick one Mountain step and take it now.";
   }
 
   const last =

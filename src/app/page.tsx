@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { Building2, Theater as TheaterIcon, Flame, Sunrise, Moon, Timer, Bell } from "lucide-react";
+import { Building2, Theater as TheaterIcon, Flame, Sunrise, Moon, Timer, Bell, History, Database } from "lucide-react";
 import { HydrationGate } from "@/components/HydrationGate";
 import { MissionControl } from "@/components/dashboard/MissionControl";
 import { MountainCard } from "@/components/dashboard/MountainCard";
 import { PressureCard } from "@/components/dashboard/PressureCard";
 import { VitalsCard } from "@/components/dashboard/VitalsCard";
+import { InsightCard } from "@/components/dashboard/InsightCard";
 import { StatTile } from "@/components/StatTile";
 import { useStore } from "@/lib/store";
 import { MISSION_STATEMENT } from "@/lib/codewords";
@@ -48,17 +49,36 @@ function Dashboard() {
           </h1>
           <p className="mt-1.5 text-sm italic text-sage-400">{MISSION_STATEMENT}</p>
         </div>
-        <Link
-          href="/reminders"
-          className="mt-1 rounded-full p-2 text-mist-400 hover:bg-ink-800 hover:text-mist-100"
-          aria-label="Reminders"
-        >
-          <Bell className="h-5 w-5" />
-        </Link>
+        <div className="mt-1 flex items-center gap-1">
+          <Link
+            href="/history"
+            className="rounded-full p-2 text-mist-400 hover:bg-ink-800 hover:text-mist-100"
+            aria-label="History"
+          >
+            <History className="h-5 w-5" />
+          </Link>
+          <Link
+            href="/backup"
+            className="rounded-full p-2 text-mist-400 hover:bg-ink-800 hover:text-mist-100"
+            aria-label="Backup"
+          >
+            <Database className="h-5 w-5" />
+          </Link>
+          <Link
+            href="/reminders"
+            className="rounded-full p-2 text-mist-400 hover:bg-ink-800 hover:text-mist-100"
+            aria-label="Reminders"
+          >
+            <Bell className="h-5 w-5" />
+          </Link>
+        </div>
       </div>
 
       {/* Section 1 */}
       <MissionControl />
+
+      {/* Proactive insight */}
+      <InsightCard />
 
       {/* Section 2 */}
       <MountainCard />

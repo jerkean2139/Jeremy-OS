@@ -20,6 +20,10 @@ The core single-user PWA is complete and shipping.
 - [x] **PWA** — installable, offline-capable (manifest + service worker + icons), mobile-first safe-area layout.
 - [x] **Persistence & sync** — Zustand + localStorage; optional single-row Postgres JSONB sync; Railway deploy config.
 - [x] **Background Web Push** — VAPID Web Push for morning, reflection, and Pulse reminders that fire when the app is closed. Subscriptions stored in Postgres (`push_subscriptions`); a secret-gated cron endpoint (`/api/push/cron`) sweeps reminder prefs and sends due notifications (de-duped via `push_sent`). Driven by `.github/workflows/reminders-cron.yml`. Configured on `/reminders`. Requires VAPID keys + `CRON_SECRET` + `REMINDER_TZ`.
+- [x] **Reliable iOS voice via Whisper** — server-side transcription (`/api/transcribe`, default `gpt-4o-mini-transcribe`) as the voice path where the Web Speech API fails (notably installed iOS PWAs). `VoiceField` auto-selects: Web Speech on desktop/Android, record→Whisper on iOS (`useRecorder`), type-only fallback otherwise.
+- [x] **AI-generated insights** — proactive pattern write-ups surfaced unprompted on the dashboard (`InsightCard`). A deterministic engine (`lib/insights.ts`) always produces one calm observation + one small action; the coach (`mode:"insight"`) refines the wording once per day when an AI key is configured (cached in localStorage). Tone-aware (lift / calm / watch), never shame.
+- [x] **History & edit past days** — `/history` lists every day with data; `/history/[date]` edits the day's mountain, pressure + sources, sleep, weight, and "moved the mountain?", links to date-scoped morning/reflection editing (`?date=`), and lets you delete stray habit/pulse logs.
+- [x] **Data export & backup** — `/backup` exports a full JSON snapshot (re-importable to restore/move devices) and a daily-series CSV; restore validates the file and confirms before replacing local state (syncs up if cloud sync is on).
 
 ---
 
@@ -27,12 +31,9 @@ The core single-user PWA is complete and shipping.
 
 Reliability and intelligence improvements. None of these are built yet unless marked.
 
-- [ ] **Reliable iOS voice via Whisper** — server-side transcription as a fallback for the Web Speech API, which is unreliable on iOS. Current voice input is browser-native (`useVoice` / Web Speech API).
 - [ ] **Apple Health integration** — pull sleep, weight, and activity automatically instead of manual entry into `DayEntry`.
 - [ ] **Journal search** — full-text search across morning check-ins, reflections, pulse notes, and habit-log notes.
-- [ ] **AI-generated insights** — proactive, periodic pattern write-ups (not just on-demand chat), surfaced as gentle nudges.
 - [ ] **Custom GPT memory** — persistent, evolving coach memory across sessions beyond the current `coachHistory` window.
-- [ ] **Data export** — export the full state document (it's already a single JSON object) to a portable file for backup/portability.
 
 ---
 

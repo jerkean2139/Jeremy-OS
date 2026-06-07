@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Sparkles, Check } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { HydrationGate } from "@/components/HydrationGate";
@@ -13,14 +13,19 @@ import { useStore } from "@/lib/store";
 export default function MorningPage() {
   return (
     <HydrationGate>
-      <Morning />
+      <Suspense>
+        <Morning />
+      </Suspense>
     </HydrationGate>
   );
 }
 
 function Morning() {
   const router = useRouter();
-  const existing = useStore((s) => s.getDay().morning);
+  const params = useSearchParams();
+  const date = params.get("date") || undefined;
+  const dest = date ? `/history/${date}` : "/";
+  const existing = useStore((s) => s.getDay(date).morning);
   const saveMorning = useStore((s) => s.saveMorning);
 
   const [whatIsTrue, setWhatIsTrue] = useState(existing?.whatIsTrue ?? "");
@@ -73,9 +78,9 @@ function Morning() {
       voiceTranscript: combined,
       aiSummary: summary || localSummary(),
       completedAt: new Date().toISOString(),
-    });
+    }, date);
     setSaved(true);
-    setTimeout(() => router.push("/"), 700);
+    setTimeout(() => router.push(dest), 700);
   };
 
   return (
@@ -83,7 +88,7 @@ function Morning() {
       <PageHeader
         title="Morning Check-In"
         subtitle="Speak or type. Set the tone before the noise begins."
-        back="/"
+        back={dest}
       />
 
       <div className="space-y-5">

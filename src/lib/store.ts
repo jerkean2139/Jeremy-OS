@@ -47,12 +47,19 @@ interface StoreActions {
   addTheaterLog: (log: Omit<TheaterLog, "id" | "timestamp"> & { timestamp?: string }) => void;
   addPulseLog: (log: Omit<PulseEntry, "id" | "timestamp"> & { timestamp?: string }) => void;
 
+  deleteElevatorLog: (id: string) => void;
+  deleteTheaterLog: (id: string) => void;
+  deletePulseLog: (id: string) => void;
+
   setManumation: (patch: Partial<ManumationState>) => void;
 
   setReminders: (patch: Partial<ReminderPrefs>) => void;
 
   addCoachMessage: (msg: Omit<CoachMessage, "id" | "timestamp">) => void;
   clearCoach: () => void;
+
+  // Replace the whole document from a backup file (data export/restore).
+  importState: (data: Partial<JeremyState>) => void;
 }
 
 export type Store = JeremyState & StoreActions;
@@ -162,6 +169,13 @@ export const useStore = create<Store>()(
           ],
         })),
 
+      deleteElevatorLog: (id) =>
+        set((s) => ({ elevatorLogs: s.elevatorLogs.filter((l) => l.id !== id) })),
+      deleteTheaterLog: (id) =>
+        set((s) => ({ theaterLogs: s.theaterLogs.filter((l) => l.id !== id) })),
+      deletePulseLog: (id) =>
+        set((s) => ({ pulseLogs: s.pulseLogs.filter((l) => l.id !== id) })),
+
       setManumation: (patch) =>
         set((s) => ({ manumation: { ...s.manumation, ...patch } })),
 
@@ -177,6 +191,18 @@ export const useStore = create<Store>()(
         })),
 
       clearCoach: () => set({ coachHistory: [] }),
+
+      importState: (data) =>
+        set((s) => ({
+          identity: data.identity ?? s.identity,
+          days: data.days ?? s.days,
+          elevatorLogs: data.elevatorLogs ?? s.elevatorLogs,
+          theaterLogs: data.theaterLogs ?? s.theaterLogs,
+          pulseLogs: data.pulseLogs ?? s.pulseLogs,
+          manumation: data.manumation ?? s.manumation,
+          coachHistory: data.coachHistory ?? s.coachHistory,
+          reminders: data.reminders ?? s.reminders,
+        })),
     }),
     {
       name: "jeremy-os-v1",
