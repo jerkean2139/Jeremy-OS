@@ -17,8 +17,11 @@ import {
   type Habit,
   type HabitLaws,
   type HabitKind,
+  type KeyHabit,
+  type KeyHabitLaws,
   DEFAULT_REMINDERS,
   DEFAULT_SCRIPTURE,
+  DEFAULT_KEY_HABIT_LAWS,
 } from "./types";
 import { clampDay } from "./bible";
 import { DEFAULT_IDENTITY } from "./codewords";
@@ -79,6 +82,9 @@ interface StoreActions {
   deleteHabit: (id: string) => void;
   toggleHabitDay: (id: string, date?: string) => void;
 
+  // Inverted Four Laws strategy for a key habit (Elevator / Theater).
+  setKeyHabitLaws: (key: KeyHabit, laws: HabitLaws) => void;
+
   completeOnboarding: () => void;
 
   addCoachMessage: (msg: Omit<CoachMessage, "id" | "timestamp">) => void;
@@ -125,6 +131,7 @@ export const useStore = create<Store>()(
       reminders: DEFAULT_REMINDERS,
       scripture: DEFAULT_SCRIPTURE,
       habits: [],
+      keyHabitLaws: DEFAULT_KEY_HABIT_LAWS,
       onboardedAt: null,
 
       _hydrated: false,
@@ -282,6 +289,11 @@ export const useStore = create<Store>()(
         }));
       },
 
+      setKeyHabitLaws: (key, laws) =>
+        set((s) => ({
+          keyHabitLaws: { ...(s.keyHabitLaws ?? DEFAULT_KEY_HABIT_LAWS), [key]: laws },
+        })),
+
       completeOnboarding: () => set({ onboardedAt: new Date().toISOString() }),
 
       addCoachMessage: (msg) =>
@@ -317,6 +329,7 @@ export const useStore = create<Store>()(
           reminders: data.reminders ?? s.reminders,
           scripture: data.scripture ?? s.scripture,
           habits: data.habits ?? s.habits,
+          keyHabitLaws: data.keyHabitLaws ?? s.keyHabitLaws,
           onboardedAt: data.onboardedAt ?? s.onboardedAt,
         })),
     }),
@@ -335,6 +348,7 @@ export const useStore = create<Store>()(
         reminders: s.reminders,
         scripture: s.scripture,
         habits: s.habits,
+        keyHabitLaws: s.keyHabitLaws,
         onboardedAt: s.onboardedAt,
       }),
       onRehydrateStorage: () => (state) => {

@@ -8,6 +8,7 @@ import { HydrationGate } from "@/components/HydrationGate";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { PressureMeter } from "@/components/PressureMeter";
+import { KeyHabitStrategy } from "@/components/KeyHabitStrategy";
 import { useStore } from "@/lib/store";
 
 export default function TheaterPage() {
@@ -111,6 +112,8 @@ function Theater() {
             </>
           )}
         </Button>
+
+        <KeyHabitStrategy which="theater" accent="sky" />
       </div>
     </div>
   );

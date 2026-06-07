@@ -9,6 +9,7 @@ import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Chip } from "@/components/ui/Chip";
 import { PressureMeter } from "@/components/PressureMeter";
+import { KeyHabitStrategy } from "@/components/KeyHabitStrategy";
 import { useStore } from "@/lib/store";
 import { ELEVATOR_TRIGGERS, type ElevatorTrigger } from "@/lib/types";
 import { floorsOn } from "@/lib/analytics";
@@ -137,6 +138,8 @@ function Elevator() {
         <p className="text-center text-xs text-mist-500">
           Awareness is the work. The pattern will teach you.
         </p>
+
+        <KeyHabitStrategy which="elevator" accent="sage" />
       </div>
     </div>
   );

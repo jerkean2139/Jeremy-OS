@@ -59,6 +59,7 @@ function Backup() {
     reminders: store.reminders,
     scripture: store.scripture,
     habits: store.habits,
+    keyHabitLaws: store.keyHabitLaws,
   });
 
   const exportJson = () => {
