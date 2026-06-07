@@ -24,10 +24,12 @@ function Review() {
   const elevatorLogs = useStore((s) => s.elevatorLogs);
   const theaterLogs = useStore((s) => s.theaterLogs);
   const pulseLogs = useStore((s) => s.pulseLogs);
+  const habits = useStore((s) => s.habits);
+  const scripture = useStore((s) => s.scripture);
 
   const review = useMemo(
-    () => buildWeeklyReview({ days, elevatorLogs, theaterLogs, pulseLogs }),
-    [days, elevatorLogs, theaterLogs, pulseLogs]
+    () => buildWeeklyReview({ days, elevatorLogs, theaterLogs, pulseLogs, habits, scripture }),
+    [days, elevatorLogs, theaterLogs, pulseLogs, habits, scripture]
   );
 
   const [narrative, setNarrative] = useState<string | null>(null);
@@ -140,6 +142,12 @@ function Review() {
             unit={review.focusPct != null ? "%" : undefined}
             hint="Pulses on the Mountain"
           />
+          <StatTile
+            label="Votes"
+            value={review.votesWeek}
+            hint="for who you're becoming"
+            accent="text-sky-400"
+          />
           {review.avgReadiness != null && (
             <StatTile
               label="Readiness"
@@ -175,6 +183,35 @@ function Review() {
           </CardContent>
         </Card>
 
+        {/* Habits this week */}
+        {(review.buildHabits.length > 0 || review.breakHabits.length > 0) && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Habits this week</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {review.buildHabits.map((h) => (
+                <HabitWeekRow
+                  key={`b-${h.name}`}
+                  name={h.name}
+                  filled={h.done}
+                  note={`${h.done}/7 · ${h.streak}d streak`}
+                  color="bg-sage-500/80"
+                />
+              ))}
+              {review.breakHabits.map((h) => (
+                <HabitWeekRow
+                  key={`k-${h.name}`}
+                  name={h.name}
+                  filled={h.cleanDays}
+                  note={`${h.cleanDays}/7 clean · ${h.streak}d`}
+                  color="bg-sky-500/70"
+                />
+              ))}
+            </CardContent>
+          </Card>
+        )}
+
         {/* Best win */}
         {review.bestWin && (
           <Card>
@@ -200,6 +237,35 @@ function Review() {
           </div>
           <p className="text-mist-100">{review.nextMove}</p>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function HabitWeekRow({
+  name,
+  filled,
+  note,
+  color,
+}: {
+  name: string;
+  filled: number;
+  note: string;
+  color: string;
+}) {
+  return (
+    <div>
+      <div className="mb-1.5 flex items-center justify-between">
+        <span className="text-sm text-mist-200">{name}</span>
+        <span className="text-xs text-mist-500">{note}</span>
+      </div>
+      <div className="flex gap-1">
+        {Array.from({ length: 7 }).map((_, i) => (
+          <span
+            key={i}
+            className={`h-1.5 flex-1 rounded-full ${i < filled ? color : "bg-ink-700"}`}
+          />
+        ))}
       </div>
     </div>
   );

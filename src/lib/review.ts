@@ -8,6 +8,7 @@ import {
   calcElevatorFreeStreak,
   type DailyPoint,
 } from "./analytics";
+import { votesForDay, activeHabits, habitStreak, type VoteSources } from "./habits";
 import { type JeremyState, type PressureSource } from "./types";
 
 export interface WeeklyReview {
@@ -28,6 +29,11 @@ export interface WeeklyReview {
   topPattern: { label: string; value: number; insight: string } | null;
   topSource: PressureSource | null;
   bestWin: string | null;
+  // Atomic Habits layer
+  votesWeek: number;
+  buildHabits: { name: string; done: number; streak: number }[]; // done out of 7
+  breakHabits: { name: string; cleanDays: number; streak: number }[]; // clean out of 7
+  dailyWordDays: number; // Daily Word read, out of 7
   highlights: string[];
   nextMove: string;
 }
@@ -55,7 +61,10 @@ function dayTracked(p: DailyPoint): boolean {
 }
 
 export function buildWeeklyReview(
-  state: Pick<JeremyState, "days" | "elevatorLogs" | "theaterLogs" | "pulseLogs">,
+  state: Pick<
+    JeremyState,
+    "days" | "elevatorLogs" | "theaterLogs" | "pulseLogs" | "habits" | "scripture"
+  >,
   now = new Date()
 ): WeeklyReview | null {
   const series = buildSeries(state.days, state.elevatorLogs, state.theaterLogs, state.pulseLogs, 7, now);
@@ -99,6 +108,33 @@ export function buildWeeklyReview(
 
   const streak = calcElevatorFreeStreak(state.elevatorLogs, now);
 
+  // --- Atomic Habits layer over the same 7-day window ---
+  const scriptureReadDates = (state.scripture?.readLog ?? []).map((r) => r.date);
+  const voteSrc: VoteSources = {
+    days: state.days,
+    elevatorLogs: state.elevatorLogs,
+    pulseLogs: state.pulseLogs,
+    habits: state.habits ?? [],
+    scriptureReadDates,
+  };
+  const votesWeek = weekKeys.reduce((s, key) => s + votesForDay(voteSrc, key).length, 0);
+  const active = activeHabits(state.habits ?? []);
+  const buildHabits = active
+    .filter((h) => h.kind === "build")
+    .map((h) => ({
+      name: h.name,
+      done: weekKeys.filter((k) => h.log.includes(k)).length,
+      streak: habitStreak(h, now),
+    }));
+  const breakHabits = active
+    .filter((h) => h.kind === "break")
+    .map((h) => ({
+      name: h.name,
+      cleanDays: 7 - weekKeys.filter((k) => h.log.includes(k)).length,
+      streak: habitStreak(h, now),
+    }));
+  const dailyWordDays = weekKeys.filter((k) => scriptureReadDates.includes(k)).length;
+
   // --- Highlights (calm, factual) ---
   const highlights: string[] = [];
   highlights.push(`${elevatorFreeDays} of 7 days Elevator-free.`);
@@ -110,6 +146,12 @@ export function buildWeeklyReview(
   if (avgSteps != null) highlights.push(`You averaged ${Math.round(avgSteps).toLocaleString()} steps a day.`);
   if (ritualDays > 0) highlights.push(`Morning ritual: ${ritualDays} of 7 days.`);
   if (focusPct != null) highlights.push(`${focusPct}% of your Pulses landed on the Mountain.`);
+  if (votesWeek > 0) highlights.push(`You cast ${votesWeek} votes for who you're becoming.`);
+  if (buildHabits.length) {
+    const top = [...buildHabits].sort((a, b) => b.done - a.done)[0];
+    highlights.push(`Habit "${top.name}": ${top.done} of 7 days.`);
+  }
+  if (dailyWordDays > 0) highlights.push(`Daily Word: ${dailyWordDays} of 7 days.`);
   if (topSource) highlights.push(`Most of the pressure traced back to: ${topSource}.`);
   if (topPattern) highlights.push(topPattern.insight);
 
@@ -123,6 +165,9 @@ export function buildWeeklyReview(
     nextMove = "Readiness is running low — bias toward recovery before pushing hard.";
   } else if (focusPct != null && focusPct < 50) {
     nextMove = "Open each morning with one Mountain block before the noise arrives.";
+  } else if (buildHabits.some((h) => h.done <= 2)) {
+    const h = buildHabits.find((x) => x.done <= 2)!;
+    nextMove = `Your "${h.name}" habit needs a smaller on-ramp — just the two-minute version, daily.`;
   } else if (mountainMovedDays >= 4) {
     nextMove = "Keep the momentum — same one-mountain discipline that's working.";
   } else if (avgPressure != null && avgPressure >= 7) {
@@ -147,6 +192,10 @@ export function buildWeeklyReview(
     topPattern,
     topSource,
     bestWin,
+    votesWeek,
+    buildHabits,
+    breakHabits,
+    dailyWordDays,
     highlights,
     nextMove,
   };
@@ -167,6 +216,14 @@ export function reviewContext(r: WeeklyReview): string {
     r.ritualDays > 0 ? `Morning ritual done ${r.ritualDays}/7 days` : "",
     r.topSource ? `Main pressure source: ${r.topSource}` : "",
     r.topPattern ? `Pattern: ${r.topPattern.insight}` : "",
+    `Identity votes this week: ${r.votesWeek}`,
+    r.buildHabits.length
+      ? `Habits building: ${r.buildHabits.map((h) => `${h.name} ${h.done}/7`).join(", ")}`
+      : "",
+    r.breakHabits.length
+      ? `Habits breaking: ${r.breakHabits.map((h) => `${h.name} ${h.cleanDays}/7 clean`).join(", ")}`
+      : "",
+    r.dailyWordDays > 0 ? `Daily Word read ${r.dailyWordDays}/7 days` : "",
     r.bestWin ? `A win named this week: ${r.bestWin}` : "",
   ]
     .filter(Boolean)
