@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Bell, BellOff, Sunrise, Moon, Timer, Send, Check } from "lucide-react";
+import { Bell, BellOff, Sunrise, Moon, Timer, Send, Check, Repeat } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { HydrationGate } from "@/components/HydrationGate";
 import { Card, CardContent } from "@/components/ui/Card";
@@ -247,6 +247,35 @@ function Reminders() {
                 </div>
               </div>
             </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="pt-5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Repeat className="h-5 w-5 text-sage-400" />
+                <span className="text-sm font-medium text-mist-100">Habit nudge</span>
+              </div>
+              <Toggle
+                on={reminders.habits?.enabled ?? false}
+                onChange={(v) =>
+                  setReminders({ habits: { ...(reminders.habits ?? { time: "12:00" }), enabled: v } })
+                }
+              />
+            </div>
+            <div className="mt-3 flex items-center justify-between">
+              <span className="text-sm text-mist-400">Remind me at</span>
+              <TimeInput
+                value={reminders.habits?.time ?? "12:00"}
+                onChange={(t) =>
+                  setReminders({ habits: { ...(reminders.habits ?? { enabled: true }), time: t } })
+                }
+              />
+            </div>
+            <p className="mt-3 text-xs text-mist-500">
+              Only fires if a habit&apos;s still undone — and leads with its two-minute version.
+            </p>
           </CardContent>
         </Card>
       </div>
