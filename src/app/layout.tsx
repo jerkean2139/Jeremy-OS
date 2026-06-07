@@ -3,6 +3,7 @@ import "./globals.css";
 import { BottomNav } from "@/components/BottomNav";
 import { PWARegister } from "@/components/PWARegister";
 import { SyncProvider } from "@/components/SyncProvider";
+import { Onboarding } from "@/components/Onboarding";
 
 export const metadata: Metadata = {
   title: "Jeremy OS",
@@ -38,6 +39,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           {children}
         </main>
         <BottomNav />
+        <Onboarding />
       </body>
     </html>
   );

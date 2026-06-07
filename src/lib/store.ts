@@ -55,6 +55,8 @@ interface StoreActions {
 
   setReminders: (patch: Partial<ReminderPrefs>) => void;
 
+  completeOnboarding: () => void;
+
   addCoachMessage: (msg: Omit<CoachMessage, "id" | "timestamp">) => void;
   clearCoach: () => void;
 
@@ -97,6 +99,7 @@ export const useStore = create<Store>()(
       coachHistory: [],
       coachMemory: [],
       reminders: DEFAULT_REMINDERS,
+      onboardedAt: null,
 
       _hydrated: false,
       setHydrated: () => set({ _hydrated: true }),
@@ -187,6 +190,8 @@ export const useStore = create<Store>()(
       setReminders: (patch) =>
         set((s) => ({ reminders: { ...s.reminders, ...patch } })),
 
+      completeOnboarding: () => set({ onboardedAt: new Date().toISOString() }),
+
       addCoachMessage: (msg) =>
         set((s) => ({
           coachHistory: [
@@ -218,6 +223,7 @@ export const useStore = create<Store>()(
           coachHistory: data.coachHistory ?? s.coachHistory,
           coachMemory: data.coachMemory ?? s.coachMemory,
           reminders: data.reminders ?? s.reminders,
+          onboardedAt: data.onboardedAt ?? s.onboardedAt,
         })),
     }),
     {
@@ -233,6 +239,7 @@ export const useStore = create<Store>()(
         coachHistory: s.coachHistory,
         coachMemory: s.coachMemory,
         reminders: s.reminders,
+        onboardedAt: s.onboardedAt,
       }),
       onRehydrateStorage: () => (state) => {
         state?.setHydrated();

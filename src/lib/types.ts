@@ -173,4 +173,6 @@ export interface JeremyState {
   // Durable facts the coach carries between sessions (editable; fed into every reply).
   coachMemory: string[];
   reminders: ReminderPrefs;
+  // ISO timestamp of when first-run onboarding was completed; null until then.
+  onboardedAt?: string | null;
 }
