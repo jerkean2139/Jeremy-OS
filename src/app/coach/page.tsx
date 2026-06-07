@@ -6,7 +6,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { HydrationGate } from "@/components/HydrationGate";
 import { Button } from "@/components/ui/Button";
 import { useStore } from "@/lib/store";
-import { buildSeries, correlations, calcElevatorFreeStreak } from "@/lib/analytics";
+import { buildCoachContext } from "@/lib/coach-context";
 import { cn } from "@/lib/utils";
 
 export default function CoachPage() {
@@ -20,7 +20,7 @@ export default function CoachPage() {
 const STARTERS = [
   "Why do I keep taking the Elevator?",
   "I feel overwhelmed. Help me focus.",
-  "What pattern do you see this week?",
+  "How are my habits shaping who I'm becoming?",
   "What's my one move today?",
 ];
 
@@ -32,6 +32,10 @@ function Coach() {
   const elevatorLogs = useStore((s) => s.elevatorLogs);
   const theaterLogs = useStore((s) => s.theaterLogs);
   const pulseLogs = useStore((s) => s.pulseLogs);
+  const identity = useStore((s) => s.identity);
+  const habits = useStore((s) => s.habits);
+  const scorecard = useStore((s) => s.scorecard);
+  const scripture = useStore((s) => s.scripture);
   const coachMemory = useStore((s) => s.coachMemory);
   const addCoachMemory = useStore((s) => s.addCoachMemory);
   const removeCoachMemory = useStore((s) => s.removeCoachMemory);
@@ -48,20 +52,17 @@ function Coach() {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [history, thinking]);
 
-  const buildContext = () => {
-    const series = buildSeries(days, elevatorLogs, theaterLogs, pulseLogs, 14);
-    const cors = correlations(series);
-    const streak = calcElevatorFreeStreak(elevatorLogs);
-    const recent = series
-      .slice(-7)
-      .map(
-        (p) =>
-          `${p.date}: pressure ${p.pressure ?? "—"}, floors ${p.floors}, acts ${p.acts}, sleep ${p.sleep ?? "—"}, focus ${p.focusPct ?? "—"}%`
-      )
-      .join("\n");
-    const pat = cors.map((c) => `${c.label}: r=${c.value}`).join("; ");
-    return `Elevator-free streak: ${streak} days.\nLast 7 days:\n${recent}\nCorrelations: ${pat || "not enough data yet"}`;
-  };
+  const buildContext = () =>
+    buildCoachContext({
+      days,
+      elevatorLogs,
+      theaterLogs,
+      pulseLogs,
+      identity,
+      habits: habits ?? [],
+      scorecard: scorecard ?? [],
+      scripture,
+    });
 
   const send = async (text: string) => {
     const content = text.trim();
@@ -250,8 +251,9 @@ function Coach() {
               <span className="text-sm font-medium">Start with what&apos;s true.</span>
             </div>
             <p className="text-sm text-mist-400">
-              I read your last two weeks of pressure, Elevator, Theater, and sleep to
-              spot patterns. Ask me anything.
+              I read your last two weeks — pressure, Elevator, Theater, sleep — plus your
+              habits, votes, scorecard, and identity. I coach systems, not willpower. Ask me
+              anything.
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
               {STARTERS.map((s) => (
