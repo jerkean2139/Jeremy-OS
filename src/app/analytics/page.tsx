@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { TrendChart } from "@/components/charts/TrendChart";
 import { useStore } from "@/lib/store";
 import { buildSeries, correlations } from "@/lib/analytics";
+import { activeHabits, buildHabitSeries, type VoteSources } from "@/lib/habits";
 import { cn } from "@/lib/utils";
 
 export default function AnalyticsPage() {
@@ -30,6 +31,8 @@ function Analytics() {
   const elevatorLogs = useStore((s) => s.elevatorLogs);
   const theaterLogs = useStore((s) => s.theaterLogs);
   const pulseLogs = useStore((s) => s.pulseLogs);
+  const habits = useStore((s) => s.habits);
+  const scripture = useStore((s) => s.scripture);
   const [rangeDays, setRangeDays] = useState(7);
 
   const series = useMemo(
@@ -38,17 +41,34 @@ function Analytics() {
   );
   const cors = useMemo(() => correlations(series), [series]);
 
-  const hasData = series.some(
-    (p) =>
-      p.pressure != null ||
-      p.floors > 0 ||
-      p.acts > 0 ||
-      p.sleep != null ||
-      p.focusPct != null ||
-      p.readiness != null ||
-      p.hrv != null ||
-      p.steps != null
-  );
+  const habitSeries = useMemo(() => {
+    const src: VoteSources = {
+      days,
+      elevatorLogs,
+      pulseLogs,
+      habits: habits ?? [],
+      scriptureReadDates: (scripture?.readLog ?? []).map((r) => r.date),
+    };
+    return buildHabitSeries(src, rangeDays);
+  }, [days, elevatorLogs, pulseLogs, habits, scripture, rangeDays]);
+
+  const hasBuildHabits = activeHabits(habits ?? []).some((h) => h.kind === "build");
+  const hasVotes = habitSeries.some((p) => p.votes > 0);
+
+  const hasData =
+    hasVotes ||
+    hasBuildHabits ||
+    series.some(
+      (p) =>
+        p.pressure != null ||
+        p.floors > 0 ||
+        p.acts > 0 ||
+        p.sleep != null ||
+        p.focusPct != null ||
+        p.readiness != null ||
+        p.hrv != null ||
+        p.steps != null
+    );
   const hasRecovery = series.some(
     (p) =>
       p.readiness != null ||
@@ -134,6 +154,29 @@ function Analytics() {
                 </div>
               </CardContent>
             </Card>
+          )}
+
+          {(hasVotes || hasBuildHabits) && (
+            <>
+              <ChartCard title="Identity votes per day">
+                <TrendChart
+                  data={habitSeries}
+                  series={[{ key: "votes", name: "Votes", color: "#7aa7d9", type: "bar" }]}
+                />
+              </ChartCard>
+
+              {hasBuildHabits && (
+                <ChartCard title="Habit consistency">
+                  <TrendChart
+                    data={habitSeries}
+                    series={[
+                      { key: "reps", name: "Habits done", color: "#5d9c80", type: "bar" },
+                      { key: "completionPct", name: "Completion %", color: "#7aa7d9", type: "line", yAxis: "right" },
+                    ]}
+                  />
+                </ChartCard>
+              )}
+            </>
           )}
 
           <ChartCard title="Pressure vs Elevator">
