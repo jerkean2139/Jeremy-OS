@@ -35,7 +35,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <PWARegister />
         <SyncProvider />
-        <main className="mx-auto min-h-[100dvh] w-full max-w-lg px-4 pb-28 pt-6">
+        <main className="mx-auto min-h-[100dvh] w-full max-w-lg px-4 pb-28 pt-[max(env(safe-area-inset-top),1.25rem)]">
           {children}
         </main>
         <BottomNav />
