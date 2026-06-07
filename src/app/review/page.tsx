@@ -140,6 +140,18 @@ function Review() {
             unit={review.focusPct != null ? "%" : undefined}
             hint="Pulses on the Mountain"
           />
+          {review.avgReadiness != null && (
+            <StatTile
+              label="Readiness"
+              value={review.avgReadiness}
+              unit="/ 100"
+              accent="text-sage-400"
+              hint="Oura avg"
+            />
+          )}
+          {review.avgHrv != null && (
+            <StatTile label="HRV" value={review.avgHrv} unit="ms" hint="Oura avg" />
+          )}
         </div>
 
         {/* Highlights */}

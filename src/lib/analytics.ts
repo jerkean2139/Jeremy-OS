@@ -73,6 +73,10 @@ export interface DailyPoint {
   acts: number;
   sleep: number | null;
   weight: number | null;
+  readiness: number | null;
+  sleepScore: number | null;
+  hrv: number | null;
+  restingHr: number | null;
   movedMountain: number | null; // 1 / 0 / null
   pulseMountain: number;
   pulseNoise: number;
@@ -102,6 +106,10 @@ export function buildSeries(
       acts: actsOn(theaterLogs, key),
       sleep: day?.sleepHours ?? null,
       weight: day?.weight ?? null,
+      readiness: day?.readiness ?? null,
+      sleepScore: day?.sleepScore ?? null,
+      hrv: day?.hrv ?? null,
+      restingHr: day?.restingHr ?? null,
       movedMountain:
         day?.movedMountain === true ? 1 : day?.movedMountain === false ? 0 : null,
       pulseMountain: pulses.byTag.mountain,
@@ -161,6 +169,11 @@ export function correlations(series: DailyPoint[]): Correlation[] {
     { label: "Pressure vs Elevator", a: "pressure", b: "floors" },
     { label: "Pressure vs Theater", a: "pressure", b: "acts" },
     { label: "Sleep vs Pressure", a: "sleep", b: "pressure" },
+    { label: "Readiness vs Pressure", a: "readiness", b: "pressure" },
+    { label: "Readiness vs Elevator", a: "readiness", b: "floors" },
+    { label: "HRV vs Pressure", a: "hrv", b: "pressure" },
+    { label: "Sleep quality vs Pressure", a: "sleepScore", b: "pressure" },
+    { label: "Resting HR vs Pressure", a: "restingHr", b: "pressure" },
     { label: "Weight vs Elevator", a: "weight", b: "floors" },
     { label: "Productive days vs Elevator", a: "movedMountain", b: "floors" },
     { label: "Focus vs Pressure", a: "focusPct", b: "pressure" },

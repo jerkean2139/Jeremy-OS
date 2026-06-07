@@ -52,6 +52,11 @@ export interface DayEntry {
   pressureSources: PressureSource[];
   weight?: number; // lbs
   sleepHours?: number;
+  // Recovery metrics entered by hand from Oura / Apple Health.
+  readiness?: number; // Oura readiness score, 0-100
+  sleepScore?: number; // Oura sleep score, 0-100
+  hrv?: number; // overnight HRV, ms
+  restingHr?: number; // resting heart rate, bpm
   movedMountain?: boolean | null; // set during reflection
   morning?: MorningCheckIn;
   reflection?: DailyReflection;

@@ -20,6 +20,8 @@ export interface WeeklyReview {
   mountainMovedDays: number;
   avgPressure: number | null;
   avgSleep: number | null;
+  avgReadiness: number | null;
+  avgHrv: number | null;
   focusPct: number | null;
   topPattern: { label: string; value: number; insight: string } | null;
   topSource: PressureSource | null;
@@ -39,7 +41,15 @@ function fmt(key: string): string {
 }
 
 function dayTracked(p: DailyPoint): boolean {
-  return p.pressure != null || p.floors > 0 || p.acts > 0 || p.sleep != null || p.focusPct != null;
+  return (
+    p.pressure != null ||
+    p.floors > 0 ||
+    p.acts > 0 ||
+    p.sleep != null ||
+    p.focusPct != null ||
+    p.readiness != null ||
+    p.hrv != null
+  );
 }
 
 export function buildWeeklyReview(
@@ -57,6 +67,8 @@ export function buildWeeklyReview(
   const mountainMovedDays = series.filter((p) => p.movedMountain === 1).length;
   const avgPressure = avg(series.map((p) => p.pressure));
   const avgSleep = avg(series.map((p) => p.sleep));
+  const avgReadiness = avg(series.map((p) => p.readiness));
+  const avgHrv = avg(series.map((p) => p.hrv));
 
   const sumMountain = series.reduce((s, p) => s + p.pulseMountain, 0);
   const sumNoise = series.reduce((s, p) => s + p.pulseNoise, 0);
@@ -89,6 +101,8 @@ export function buildWeeklyReview(
   if (mountainMovedDays > 0) highlights.push(`You moved the mountain ${mountainMovedDays} ${mountainMovedDays === 1 ? "day" : "days"}.`);
   if (avgPressure != null) highlights.push(`Average pressure sat around ${avgPressure}/10.`);
   if (avgSleep != null) highlights.push(`Average sleep was ${avgSleep}h.`);
+  if (avgReadiness != null) highlights.push(`Readiness averaged ${avgReadiness}/100.`);
+  if (avgHrv != null) highlights.push(`HRV averaged ${avgHrv}ms.`);
   if (focusPct != null) highlights.push(`${focusPct}% of your Pulses landed on the Mountain.`);
   if (topSource) highlights.push(`Most of the pressure traced back to: ${topSource}.`);
   if (topPattern) highlights.push(topPattern.insight);
@@ -99,6 +113,8 @@ export function buildWeeklyReview(
     nextMove = "Protect sleep first — it's quietly setting your pressure for the whole week.";
   } else if (topPattern?.label === "Pressure vs Elevator" && topPattern.value > 0) {
     nextMove = "When pressure climbs next week, run one Pulse before the Elevator.";
+  } else if (avgReadiness != null && avgReadiness < 70) {
+    nextMove = "Readiness is running low — bias toward recovery before pushing hard.";
   } else if (focusPct != null && focusPct < 50) {
     nextMove = "Open each morning with one Mountain block before the noise arrives.";
   } else if (mountainMovedDays >= 4) {
@@ -117,6 +133,8 @@ export function buildWeeklyReview(
     mountainMovedDays,
     avgPressure,
     avgSleep,
+    avgReadiness,
+    avgHrv,
     focusPct,
     topPattern,
     topSource,
@@ -134,6 +152,9 @@ export function reviewContext(r: WeeklyReview): string {
     `Floors total: ${r.floorsTotal}, Acts total: ${r.actsTotal}`,
     `Mountain moved: ${r.mountainMovedDays} days`,
     `Avg pressure: ${r.avgPressure ?? "—"}, Avg sleep: ${r.avgSleep ?? "—"}h, Focus: ${r.focusPct ?? "—"}%`,
+    r.avgReadiness != null || r.avgHrv != null
+      ? `Recovery — readiness: ${r.avgReadiness ?? "—"}/100, HRV: ${r.avgHrv ?? "—"}ms`
+      : "",
     r.topSource ? `Main pressure source: ${r.topSource}` : "",
     r.topPattern ? `Pattern: ${r.topPattern.insight}` : "",
     r.bestWin ? `A win named this week: ${r.bestWin}` : "",

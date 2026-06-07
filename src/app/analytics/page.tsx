@@ -39,7 +39,17 @@ function Analytics() {
   const cors = useMemo(() => correlations(series), [series]);
 
   const hasData = series.some(
-    (p) => p.pressure != null || p.floors > 0 || p.acts > 0 || p.sleep != null || p.focusPct != null
+    (p) =>
+      p.pressure != null ||
+      p.floors > 0 ||
+      p.acts > 0 ||
+      p.sleep != null ||
+      p.focusPct != null ||
+      p.readiness != null ||
+      p.hrv != null
+  );
+  const hasRecovery = series.some(
+    (p) => p.readiness != null || p.sleepScore != null || p.hrv != null || p.restingHr != null
   );
 
   return (
@@ -149,6 +159,50 @@ function Analytics() {
               ]}
             />
           </ChartCard>
+
+          {hasRecovery && (
+            <>
+              <ChartCard title="Readiness vs Pressure">
+                <TrendChart
+                  data={series}
+                  series={[
+                    { key: "readiness", name: "Readiness", color: "#5d9c80", type: "line" },
+                    { key: "pressure", name: "Pressure", color: "#d99a6c", type: "line", yAxis: "right" },
+                  ]}
+                />
+              </ChartCard>
+
+              <ChartCard title="Readiness vs Elevator">
+                <TrendChart
+                  data={series}
+                  series={[
+                    { key: "floors", name: "Floors", color: "#c97f4a", type: "bar", yAxis: "right" },
+                    { key: "readiness", name: "Readiness", color: "#5d9c80", type: "line" },
+                  ]}
+                />
+              </ChartCard>
+
+              <ChartCard title="Recovery — HRV & Resting HR">
+                <TrendChart
+                  data={series}
+                  series={[
+                    { key: "hrv", name: "HRV (ms)", color: "#7aa7d9", type: "line" },
+                    { key: "restingHr", name: "Resting HR (bpm)", color: "#c97f4a", type: "line", yAxis: "right" },
+                  ]}
+                />
+              </ChartCard>
+
+              <ChartCard title="Sleep quality vs Pressure">
+                <TrendChart
+                  data={series}
+                  series={[
+                    { key: "sleepScore", name: "Sleep score", color: "#7fb59b", type: "line" },
+                    { key: "pressure", name: "Pressure", color: "#d99a6c", type: "line", yAxis: "right" },
+                  ]}
+                />
+              </ChartCard>
+            </>
+          )}
 
           <ChartCard title="Weight vs Elevator">
             <TrendChart

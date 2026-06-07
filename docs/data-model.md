@@ -27,6 +27,8 @@ The entire persisted app state. This is exactly what `localStorage` holds (key `
 
 A single day's snapshot, keyed by ISO date.
 
+Recovery metrics are entered by hand from Oura / Apple Health (no live integration by design): `weight` (lbs), `sleepHours`, `readiness` (Oura score 0–100), `sleepScore` (Oura score 0–100), `hrv` (overnight HRV, ms), `restingHr` (bpm). All optional. They flow into `buildSeries` → the correlation engine and the Weekly Review.
+
 | Field | Type | Notes |
 |-------|------|-------|
 | `date` | `string` | `YYYY-MM-DD`. |
