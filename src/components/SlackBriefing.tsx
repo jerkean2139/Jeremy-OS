@@ -45,14 +45,17 @@ export function SlackBriefing({ className }: { className?: string }) {
               Slack{data?.team ? ` · ${data.team}` : ""}
             </span>
           </div>
-          <button
-            onClick={() => load(true)}
-            disabled={loading}
-            className="rounded-full p-1.5 text-mist-500 transition-colors hover:bg-ink-800 hover:text-mist-200 disabled:opacity-50"
-            aria-label="Refresh Slack"
-          >
-            <RefreshCw className={cn("h-3.5 w-3.5", loading && "animate-spin")} />
-          </button>
+          <div className="flex items-center gap-1.5">
+            <StatusPill loading={loading} data={data} />
+            <button
+              onClick={() => load(true)}
+              disabled={loading}
+              className="rounded-full p-1.5 text-mist-500 transition-colors hover:bg-ink-800 hover:text-mist-200 disabled:opacity-50"
+              aria-label="Refresh Slack"
+            >
+              <RefreshCw className={cn("h-3.5 w-3.5", loading && "animate-spin")} />
+            </button>
+          </div>
         </div>
 
         {loading && !data ? (
@@ -70,6 +73,31 @@ export function SlackBriefing({ className }: { className?: string }) {
         )}
       </CardContent>
     </Card>
+  );
+}
+
+function StatusPill({ loading, data }: { loading: boolean; data: SlackBriefingData | null }) {
+  if (loading && !data) return null;
+  let label: string;
+  let cls: string;
+  let dot: string;
+  if (!data?.configured) {
+    label = "Not connected";
+    cls = "text-mist-400 bg-ink-800/80";
+    dot = "bg-mist-500";
+  } else if (!data.ok) {
+    label = "Error";
+    cls = "text-ember-300 bg-ember-500/15";
+    dot = "bg-ember-400";
+  } else {
+    label = "Connected";
+    cls = "text-sage-300 bg-sage-500/15";
+    dot = "bg-sage-400";
+  }
+  return (
+    <span className={cn("flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium", cls)}>
+      <span className={cn("h-1.5 w-1.5 rounded-full", dot)} /> {label}
+    </span>
   );
 }
 
