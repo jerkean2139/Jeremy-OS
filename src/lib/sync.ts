@@ -28,6 +28,7 @@ const DATA_KEYS = [
   "coachHistory",
   "coachMemory",
   "reminders",
+  "onboardedAt",
 ] as const;
 
 function snapshot(state: Store): JeremyState {
@@ -41,6 +42,7 @@ function snapshot(state: Store): JeremyState {
     coachHistory: state.coachHistory,
     coachMemory: state.coachMemory,
     reminders: state.reminders,
+    onboardedAt: state.onboardedAt,
   };
 }
 
@@ -122,9 +124,15 @@ export async function startSync() {
 
   await pull();
 
-  // Push on every subsequent local change (debounced).
-  useStore.subscribe(() => {
+  // Push on every subsequent local change (debounced). Only react to real
+  // data changes — ignoring internal meta churn (e.g. _syncStatus). Without
+  // this guard, schedulePush's own setState({ _syncStatus }) would re-enter
+  // this subscriber and recurse infinitely, throwing out of whatever store
+  // write triggered it.
+  useStore.subscribe((state, prev) => {
     if (applyingRemote) return;
+    const dataChanged = DATA_KEYS.some((k) => state[k] !== prev[k]);
+    if (!dataChanged) return;
     schedulePush();
   });
 
