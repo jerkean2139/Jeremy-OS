@@ -142,6 +142,17 @@ export interface Habit {
   log: string[];
 }
 
+// Standing "inverted Four Laws" strategy for the two key habits (Elevator,
+// Theater) — make it invisible / unattractive / difficult / unsatisfying.
+export type KeyHabit = "elevator" | "theater";
+
+export type KeyHabitLaws = Record<KeyHabit, HabitLaws>;
+
+export const DEFAULT_KEY_HABIT_LAWS: KeyHabitLaws = {
+  elevator: {},
+  theater: {},
+};
+
 // One-year Bible reading plan progress. Self-paced: `currentDay` is how far
 // you've read (1..365), not the calendar — no guilt, only forward motion.
 export interface ScriptureProgress {
@@ -218,6 +229,8 @@ export interface JeremyState {
   scripture: ScriptureProgress;
   // Atomic Habits: user-defined habits to build or break.
   habits: Habit[];
+  // Inverted Four Laws strategy for the two key habits.
+  keyHabitLaws: KeyHabitLaws;
   // ISO timestamp of when first-run onboarding was completed; null until then.
   onboardedAt?: string | null;
 }
