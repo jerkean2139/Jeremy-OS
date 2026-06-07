@@ -90,6 +90,22 @@ export function activeHabits(habits: Habit[]): Habit[] {
   return habits.filter((h) => !h.archivedAt);
 }
 
+// Persistence encouragement keyed to streak milestones — Clear's "Plateau of
+// Latent Potential": effort compounds invisibly before results show. (~66 days
+// is the average time to automaticity in the research he cites.)
+export function persistenceNote(maxStreakDays: number): string | null {
+  if (maxStreakDays >= 66) {
+    return `Day ${maxStreakDays}. This is just who you are now — the habit runs on its own. Keep casting the vote.`;
+  }
+  if (maxStreakDays >= 21) {
+    return `Day ${maxStreakDays}. Past the hardest stretch — your effort is compounding even when the results lag.`;
+  }
+  if (maxStreakDays >= 7) {
+    return `Day ${maxStreakDays}. This is the Valley of Disappointment, where most quit. You didn't. Stay on the path.`;
+  }
+  return null;
+}
+
 // The implementation intention / habit-stacking recipe, as a natural sentence.
 // "After my morning coffee, I will walk at 07:00 in the neighborhood."
 export function habitRecipe(h: {
