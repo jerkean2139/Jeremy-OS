@@ -189,6 +189,7 @@ function HabitRow({ habit, onEdit }: { habit: Habit; onEdit: () => void }) {
     laws.length > 0 ||
     habit.twoMinute ||
     !!recipe ||
+    !!habit.temptation ||
     !!habit.stakes ||
     !!habit.accountablePartner;
 
@@ -276,6 +277,9 @@ function HabitRow({ habit, onEdit }: { habit: Habit; onEdit: () => void }) {
             {open && (
               <div className="mt-2 space-y-2 border-t border-ink-700/60 pt-3 text-sm">
                 {recipe && <Detail label="Habit recipe">{recipe}</Detail>}
+                {habit.temptation && (
+                  <Detail label="Paired reward">{habit.temptation}</Detail>
+                )}
                 {habit.twoMinute && (
                   <Detail label="Two-minute version">{habit.twoMinute}</Detail>
                 )}
@@ -323,6 +327,7 @@ function HabitEditor({ habit, onClose }: { habit: Habit | null; onClose: () => v
   const [stackAfter, setStackAfter] = useState(habit?.stackAfter ?? "");
   const [cueTime, setCueTime] = useState(habit?.cueTime ?? "");
   const [cuePlace, setCuePlace] = useState(habit?.cuePlace ?? "");
+  const [temptation, setTemptation] = useState(habit?.temptation ?? "");
   const [stakes, setStakes] = useState(habit?.stakes ?? "");
   const [accountablePartner, setAccountablePartner] = useState(habit?.accountablePartner ?? "");
   const [laws, setLaws] = useState<HabitLaws>(habit?.laws ?? {});
@@ -340,6 +345,7 @@ function HabitEditor({ habit, onClose }: { habit: Habit | null; onClose: () => v
       stackAfter,
       cueTime,
       cuePlace,
+      temptation,
       stakes,
       accountablePartner,
       laws,
@@ -452,6 +458,15 @@ function HabitEditor({ habit, onClose }: { habit: Habit | null; onClose: () => v
               {recipePreview}
             </p>
           )}
+
+          <Field label="Paired reward" hint="a treat you only allow while you do this (temptation bundling)">
+            <input
+              className={inputCls}
+              value={temptation}
+              onChange={(e) => setTemptation(e.target.value)}
+              placeholder="my favorite podcast, an iced coffee…"
+            />
+          </Field>
         </CardContent>
       </Card>
 

@@ -87,8 +87,10 @@ export function buildCoachContext(input: CoachContextInput): string {
           `  - ${h.name} — ${habitStreak(h)} day(s) strong, ${
             habitDoneToday(h) ? "done today" : "not yet today"
           }${h.identity ? ` [vote: ${h.identity}]` : ""}${recipe ? ` [recipe: ${recipe}]` : ""}${
-            h.accountablePartner ? ` [accountable to: ${h.accountablePartner}]` : ""
-          }${h.stakes ? ` [stakes: ${h.stakes}]` : ""}`
+            h.temptation ? ` [paired reward: ${h.temptation}]` : ""
+          }${h.accountablePartner ? ` [accountable to: ${h.accountablePartner}]` : ""}${
+            h.stakes ? ` [stakes: ${h.stakes}]` : ""
+          }`
         );
       }
     }

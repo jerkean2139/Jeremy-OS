@@ -79,6 +79,7 @@ interface StoreActions {
     stackAfter?: string;
     cueTime?: string;
     cuePlace?: string;
+    temptation?: string;
     stakes?: string;
     accountablePartner?: string;
     laws?: HabitLaws;
@@ -269,6 +270,7 @@ export const useStore = create<Store>()(
               stackAfter: input.stackAfter?.trim() || undefined,
               cueTime: input.cueTime?.trim() || undefined,
               cuePlace: input.cuePlace?.trim() || undefined,
+              temptation: input.temptation?.trim() || undefined,
               stakes: input.stakes?.trim() || undefined,
               accountablePartner: input.accountablePartner?.trim() || undefined,
               laws: input.laws ?? {},
