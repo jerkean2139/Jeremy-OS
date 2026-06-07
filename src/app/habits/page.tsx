@@ -185,7 +185,12 @@ function HabitRow({ habit, onEdit }: { habit: Habit; onEdit: () => void }) {
 
   const laws = LAW_FIELDS[habit.kind].filter((f) => habit.laws[f.key]);
   const recipe = habitRecipe(habit);
-  const hasDetail = laws.length > 0 || habit.twoMinute || !!recipe;
+  const hasDetail =
+    laws.length > 0 ||
+    habit.twoMinute ||
+    !!recipe ||
+    !!habit.stakes ||
+    !!habit.accountablePartner;
 
   const streakLabel = isBuild
     ? `${streak} day${streak === 1 ? "" : "s"} strong`
@@ -251,6 +256,11 @@ function HabitRow({ habit, onEdit }: { habit: Habit; onEdit: () => void }) {
             {isBuild
               ? "Yesterday slipped by — that's fine. Never miss twice. Do the two-minute version today."
               : "Yesterday happened, no shame. Never miss twice — today is a clean slate."}
+            {habit.accountablePartner && (
+              <span className="mt-1 block text-ember-300/80">
+                {habit.accountablePartner} is in your corner.
+              </span>
+            )}
           </div>
         )}
 
@@ -274,6 +284,10 @@ function HabitRow({ habit, onEdit }: { habit: Habit; onEdit: () => void }) {
                     {habit.laws[f.key]}
                   </Detail>
                 ))}
+                {habit.stakes && <Detail label="The stakes">{habit.stakes}</Detail>}
+                {habit.accountablePartner && (
+                  <Detail label="Who knows">{habit.accountablePartner}</Detail>
+                )}
                 <button
                   onClick={() => archive(habit.id)}
                   className="mt-1 inline-flex items-center gap-1 text-xs text-mist-600 hover:text-ember-400"
@@ -309,6 +323,8 @@ function HabitEditor({ habit, onClose }: { habit: Habit | null; onClose: () => v
   const [stackAfter, setStackAfter] = useState(habit?.stackAfter ?? "");
   const [cueTime, setCueTime] = useState(habit?.cueTime ?? "");
   const [cuePlace, setCuePlace] = useState(habit?.cuePlace ?? "");
+  const [stakes, setStakes] = useState(habit?.stakes ?? "");
+  const [accountablePartner, setAccountablePartner] = useState(habit?.accountablePartner ?? "");
   const [laws, setLaws] = useState<HabitLaws>(habit?.laws ?? {});
 
   const canSave = name.trim().length > 0;
@@ -316,7 +332,18 @@ function HabitEditor({ habit, onClose }: { habit: Habit | null; onClose: () => v
 
   const save = () => {
     if (!canSave) return;
-    const fields = { name, kind, identity, twoMinute, stackAfter, cueTime, cuePlace, laws };
+    const fields = {
+      name,
+      kind,
+      identity,
+      twoMinute,
+      stackAfter,
+      cueTime,
+      cuePlace,
+      stakes,
+      accountablePartner,
+      laws,
+    };
     if (habit) {
       updateHabit(habit.id, fields);
     } else {
@@ -444,6 +471,38 @@ function HabitEditor({ habit, onClose }: { habit: Habit | null; onClose: () => v
               />
             </Field>
           ))}
+        </CardContent>
+      </Card>
+
+      {/* Accountability — make it unsatisfying to miss */}
+      <Card>
+        <CardContent className="space-y-4 pt-5">
+          <div>
+            <div className="text-[11px] font-medium uppercase tracking-[0.16em] text-mist-500">
+              Accountability
+            </div>
+            <div className="mb-1 text-xs text-mist-600">
+              Add a cost and a witness — make it unsatisfying to miss.
+            </div>
+          </div>
+
+          <Field label="The stakes" hint="what missing costs you">
+            <input
+              className={inputCls}
+              value={stakes}
+              onChange={(e) => setStakes(e.target.value)}
+              placeholder="$20 to charity, no coffee tomorrow…"
+            />
+          </Field>
+
+          <Field label="Who knows" hint="someone you've told / who's watching">
+            <input
+              className={inputCls}
+              value={accountablePartner}
+              onChange={(e) => setAccountablePartner(e.target.value)}
+              placeholder="my wife, my coach…"
+            />
+          </Field>
         </CardContent>
       </Card>
 
