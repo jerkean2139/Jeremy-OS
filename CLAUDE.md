@@ -54,7 +54,7 @@ npm run lint                 # next lint
 
 The app runs entirely on-device by default. Optional env vars (all server-side):
 `APP_PASSCODE` (passcode lock), `OPENAI_API_KEY` / `OPENAI_MODEL` (AI coach),
-`DATABASE_URL` / `DATABASE_SSL` (Postgres sync).
+`DATABASE_URL` / `DATABASE_SSL` (Postgres sync), `SLACK_TOKEN` (the 7am Slack briefing).
 
 ---
 
@@ -77,6 +77,7 @@ src/
     api/coach/route.ts    # OpenAI coach + local fallback
     api/tts/route.ts      # OpenAI text-to-speech (premium voice) or 204 -> browser fallback
     api/state/route.ts    # Postgres state GET/PUT (single user)
+    api/slack/route.ts    # 7am Slack briefing (unreads + mentions + AI triage), cached
     api/auth/route.ts     # Passcode -> HttpOnly cookie
     layout.tsx            # Root layout: BottomNav, PWARegister, SyncProvider
   components/

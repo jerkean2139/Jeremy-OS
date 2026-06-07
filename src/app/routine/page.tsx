@@ -18,6 +18,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { HydrationGate } from "@/components/HydrationGate";
 import { VoiceField } from "@/components/VoiceField";
 import { VoiceChat } from "@/components/VoiceChat";
+import { SlackBriefing } from "@/components/SlackBriefing";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { useStore } from "@/lib/store";
@@ -445,6 +446,14 @@ function CompleteStep({
           <p className="text-mist-100">{mountain}</p>
         </div>
       )}
+
+      {/* Start here: a calm triage of Slack before the noise pulls you in. */}
+      <div>
+        <div className="mb-2 px-1 text-[11px] font-medium uppercase tracking-[0.16em] text-mist-500">
+          Start here
+        </div>
+        <SlackBriefing />
+      </div>
 
       <Button size="lg" className="w-full" onClick={onDone}>
         At the computer — let&apos;s go <ArrowRight className="h-5 w-5" />
