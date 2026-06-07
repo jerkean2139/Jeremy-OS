@@ -9,6 +9,7 @@ import { PressureCard } from "@/components/dashboard/PressureCard";
 import { VitalsCard } from "@/components/dashboard/VitalsCard";
 import { InsightCard } from "@/components/dashboard/InsightCard";
 import { SlackBriefing } from "@/components/SlackBriefing";
+import { ScriptureCard } from "@/components/dashboard/ScriptureCard";
 import { StatTile } from "@/components/StatTile";
 import { useStore } from "@/lib/store";
 import { MISSION_STATEMENT } from "@/lib/codewords";
@@ -105,6 +106,9 @@ function Dashboard() {
           </div>
         </div>
       </Link>
+
+      {/* Daily Word — scripture before the noise */}
+      <ScriptureCard />
 
       {/* Slack — the 7am "start here" briefing */}
       <SlackBriefing />

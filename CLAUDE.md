@@ -70,6 +70,7 @@ src/
     elevator/             # Elevator tracker (key habit)
     theater/              # Theater tracker (key habit)
     reflection/           # Evening reflection
+    scripture/            # Daily Word: one-year Bible plan (OT+NT) + AI "what it means"
     coach/                # AI Recovery Coach
     manumation/           # Launch command center (Distance to Launch)
     analytics/            # Charts + auto-detected correlations
@@ -78,6 +79,7 @@ src/
     api/tts/route.ts      # OpenAI text-to-speech (premium voice) or 204 -> browser fallback
     api/state/route.ts    # Postgres state GET/PUT (single user)
     api/slack/route.ts    # 7am Slack briefing (unreads + mentions + AI triage), cached
+    api/scripture/route.ts # Daily Word: WEB Bible text (free API) + AI reflection, cached
     api/auth/route.ts     # Passcode -> HttpOnly cookie
     layout.tsx            # Root layout: BottomNav, PWARegister, SyncProvider
   components/
@@ -89,6 +91,7 @@ src/
   lib/
     types.ts              # Domain model
     routine.ts            # Morning Ritual: stretch sequence, walk targets, streak
+    bible.ts              # One-year Bible reading plan (OT+NT daily), pure functions
     store.ts              # Zustand + persistence
     codewords.ts          # The private language (source of truth)
     analytics.ts          # Series + correlation engine (pure functions)
