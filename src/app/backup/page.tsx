@@ -60,6 +60,7 @@ function Backup() {
     scripture: store.scripture,
     habits: store.habits,
     keyHabitLaws: store.keyHabitLaws,
+    scorecard: store.scorecard,
   });
 
   const exportJson = () => {

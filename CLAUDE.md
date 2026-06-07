@@ -72,6 +72,7 @@ src/
     reflection/           # Evening reflection
     scripture/            # Daily Word: one-year Bible plan (OT+NT) + AI "what it means"
     habits/               # Atomic Habits hub: build/break habits via the 4 Laws
+    scorecard/            # Habit Scorecard: awareness inventory (+ / = / −)
     coach/                # AI Recovery Coach
     manumation/           # Launch command center (Distance to Launch)
     analytics/            # Charts + auto-detected correlations
