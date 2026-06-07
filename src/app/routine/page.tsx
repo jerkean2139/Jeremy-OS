@@ -13,12 +13,15 @@ import {
   Volume2,
   ArrowRight,
   Clock,
+  BookOpen,
+  Plus,
 } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { HydrationGate } from "@/components/HydrationGate";
 import { VoiceField } from "@/components/VoiceField";
 import { VoiceChat } from "@/components/VoiceChat";
 import { SlackBriefing } from "@/components/SlackBriefing";
+import { ScriptureReader } from "@/components/ScriptureReader";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { useStore } from "@/lib/store";
@@ -32,9 +35,13 @@ import {
   fmtClock,
 } from "@/lib/routine";
 import { calcElevatorFreeStreak } from "@/lib/analytics";
-import { cn } from "@/lib/utils";
+import { clampDay } from "@/lib/bible";
+import { cn, todayKey } from "@/lib/utils";
 
-type Step = "intro" | "checkin" | "stretch" | "walk" | "complete";
+type Step = "intro" | "checkin" | "stretch" | "walk" | "read" | "complete";
+
+// A soft suggested reading length — finishable early, extendable. Calm, not enforced.
+const READ_SEC = 12 * 60;
 
 export default function RoutinePage() {
   return (
@@ -77,10 +84,11 @@ function Ritual() {
           onDone={(sec, s) => {
             setWalkSec(sec);
             setSteps(s);
-            setStep("complete");
+            setStep("read");
           }}
         />
       )}
+      {step === "read" && <ReadStep onDone={() => setStep("complete")} />}
       {step === "complete" && (
         <CompleteStep
           totalSec={startedAt ? Math.round((Date.now() - startedAt) / 1000) : stretchSec + walkSec}
@@ -121,6 +129,7 @@ function Intro({ onStart }: { onStart: () => void }) {
     { icon: Sunrise, label: "Check-in", detail: "Set the tone, voice-first" },
     { icon: Wind, label: "Stretch", detail: "5 minutes, guided" },
     { icon: Footprints, label: "Walk", detail: "30–45 minutes" },
+    { icon: BookOpen, label: "Read", detail: "Daily Word — 10–15 minutes" },
   ];
   return (
     <div className="space-y-5">
@@ -140,7 +149,7 @@ function Intro({ onStart }: { onStart: () => void }) {
         </CardContent>
       </Card>
       <p className="px-1 text-center text-sm text-mist-500">
-        One calm hour. We&apos;ll time it together and log everything at the end.
+        One calm hour or so. We&apos;ll time it together and log everything at the end.
       </p>
       <Button size="lg" className="w-full" onClick={onStart}>
         <Play className="h-5 w-5" /> Start ritual
@@ -356,6 +365,80 @@ function WalkStep({ onDone }: { onDone: (sec: number, steps: number | undefined)
 
       <Button size="lg" className="w-full" onClick={finish}>
         <Check className="h-5 w-5" /> Finish walk
+      </Button>
+    </div>
+  );
+}
+
+// --- Step 3.5: Daily Word — read for 10-15 min, soft timer ---
+function ReadStep({ onDone }: { onDone: () => void }) {
+  const { cancel } = useSpeech();
+  const scripture = useStore((s) => s.scripture);
+  const markScriptureRead = useStore((s) => s.markScriptureRead);
+
+  const day = clampDay(scripture?.currentDay ?? 1);
+  const alreadyReadToday = scripture?.lastReadDate === todayKey();
+
+  const [left, setLeft] = useState(READ_SEC);
+  const [paused, setPaused] = useState(false);
+
+  // No spoken cue here — reading is quiet. Make sure nothing's still talking.
+  useEffect(() => {
+    cancel();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (paused) return;
+    const id = setInterval(() => setLeft((l) => (l > 0 ? l - 1 : 0)), 1000);
+    return () => clearInterval(id);
+  }, [paused]);
+
+  const finish = () => {
+    // Count it once per day; advances the plan to tomorrow's reading.
+    if (!alreadyReadToday) markScriptureRead();
+    onDone();
+  };
+
+  const done = left === 0;
+
+  return (
+    <div className="space-y-5">
+      {/* Soft reading timer */}
+      <div className="flex items-center justify-center gap-2 text-sm">
+        <BookOpen className={cn("h-4 w-4", done ? "text-sage-400" : "text-sky-400")} />
+        <span className={cn("tabular-nums font-medium", done ? "text-sage-400" : "text-mist-300")}>
+          {fmtClock(left)}
+        </span>
+        <span className="text-mist-600">{done ? "· take your time" : "reading time"}</span>
+      </div>
+
+      <ScriptureReader day={day} />
+
+      <div className="flex gap-3">
+        <Button variant="soft" size="md" className="flex-1" onClick={() => setPaused((p) => !p)}>
+          {paused ? (
+            <>
+              <Play className="h-4 w-4" /> Resume
+            </>
+          ) : (
+            <>
+              <Pause className="h-4 w-4" /> Pause
+            </>
+          )}
+        </Button>
+        <Button
+          variant="soft"
+          size="md"
+          className="flex-1"
+          onClick={() => setLeft((l) => l + 5 * 60)}
+        >
+          <Plus className="h-4 w-4" /> 5 min
+        </Button>
+      </div>
+
+      <Button size="lg" className="w-full" onClick={finish}>
+        <Check className="h-5 w-5" /> Done reading — briefing
       </Button>
     </div>
   );
