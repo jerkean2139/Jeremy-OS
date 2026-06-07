@@ -13,7 +13,7 @@ export function PageHeader({ title, subtitle, back }: PageHeaderProps) {
       {back && (
         <Link
           href={back}
-          className="mb-3 inline-flex items-center gap-1 text-sm text-mist-400 hover:text-mist-200"
+          className="-ml-1 mb-3 inline-flex items-center gap-1 py-1 pr-3 text-sm text-mist-400 hover:text-mist-200"
         >
           <ChevronLeft className="h-4 w-4" /> Back
         </Link>
