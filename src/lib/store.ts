@@ -11,14 +11,29 @@ import {
   type DailyReflection,
   type ManumationState,
   type CoachMessage,
+  type PulseEntry,
+  type ReminderPrefs,
+  DEFAULT_REMINDERS,
 } from "./types";
 import { DEFAULT_IDENTITY } from "./codewords";
 import { todayKey, uid } from "./utils";
+
+export type SyncStatus =
+  | "idle"
+  | "local" // no database configured; localStorage only
+  | "saving"
+  | "synced"
+  | "offline"
+  | "error";
 
 interface StoreActions {
   // hydration flag so we can avoid SSR/client mismatch flashes
   _hydrated: boolean;
   setHydrated: () => void;
+
+  // cloud-sync status (Postgres backend); not persisted
+  _syncStatus: SyncStatus;
+  _lastSyncedAt: string | null;
 
   getDay: (date?: string) => DayEntry;
   updateDay: (patch: Partial<DayEntry>, date?: string) => void;
@@ -30,11 +45,27 @@ interface StoreActions {
 
   addElevatorLog: (log: Omit<ElevatorLog, "id" | "timestamp"> & { timestamp?: string }) => void;
   addTheaterLog: (log: Omit<TheaterLog, "id" | "timestamp"> & { timestamp?: string }) => void;
+  addPulseLog: (log: Omit<PulseEntry, "id" | "timestamp"> & { timestamp?: string }) => void;
+
+  deleteElevatorLog: (id: string) => void;
+  deleteTheaterLog: (id: string) => void;
+  deletePulseLog: (id: string) => void;
 
   setManumation: (patch: Partial<ManumationState>) => void;
 
+  setReminders: (patch: Partial<ReminderPrefs>) => void;
+
+  completeOnboarding: () => void;
+
   addCoachMessage: (msg: Omit<CoachMessage, "id" | "timestamp">) => void;
   clearCoach: () => void;
+
+  setCoachMemory: (notes: string[]) => void;
+  addCoachMemory: (note: string) => void;
+  removeCoachMemory: (index: number) => void;
+
+  // Replace the whole document from a backup file (data export/restore).
+  importState: (data: Partial<JeremyState>) => void;
 }
 
 export type Store = JeremyState & StoreActions;
@@ -57,6 +88,7 @@ export const useStore = create<Store>()(
       days: {},
       elevatorLogs: [],
       theaterLogs: [],
+      pulseLogs: [],
       manumation: {
         funnelCompletion: 0,
         contentLoaded: 0,
@@ -65,9 +97,15 @@ export const useStore = create<Store>()(
         teamReadiness: 0,
       },
       coachHistory: [],
+      coachMemory: [],
+      reminders: DEFAULT_REMINDERS,
+      onboardedAt: null,
 
       _hydrated: false,
       setHydrated: () => set({ _hydrated: true }),
+
+      _syncStatus: "idle",
+      _lastSyncedAt: null,
 
       // --- day ---
       getDay: (date) => {
@@ -131,8 +169,28 @@ export const useStore = create<Store>()(
           ],
         })),
 
+      addPulseLog: (log) =>
+        set((s) => ({
+          pulseLogs: [
+            { ...log, id: uid(), timestamp: log.timestamp ?? new Date().toISOString() },
+            ...s.pulseLogs,
+          ],
+        })),
+
+      deleteElevatorLog: (id) =>
+        set((s) => ({ elevatorLogs: s.elevatorLogs.filter((l) => l.id !== id) })),
+      deleteTheaterLog: (id) =>
+        set((s) => ({ theaterLogs: s.theaterLogs.filter((l) => l.id !== id) })),
+      deletePulseLog: (id) =>
+        set((s) => ({ pulseLogs: s.pulseLogs.filter((l) => l.id !== id) })),
+
       setManumation: (patch) =>
         set((s) => ({ manumation: { ...s.manumation, ...patch } })),
+
+      setReminders: (patch) =>
+        set((s) => ({ reminders: { ...s.reminders, ...patch } })),
+
+      completeOnboarding: () => set({ onboardedAt: new Date().toISOString() }),
 
       addCoachMessage: (msg) =>
         set((s) => ({
@@ -143,6 +201,30 @@ export const useStore = create<Store>()(
         })),
 
       clearCoach: () => set({ coachHistory: [] }),
+
+      setCoachMemory: (notes) => set({ coachMemory: notes }),
+      addCoachMemory: (note) =>
+        set((s) => {
+          const n = note.trim();
+          if (!n || s.coachMemory.includes(n)) return {};
+          return { coachMemory: [...s.coachMemory, n] };
+        }),
+      removeCoachMemory: (index) =>
+        set((s) => ({ coachMemory: s.coachMemory.filter((_, i) => i !== index) })),
+
+      importState: (data) =>
+        set((s) => ({
+          identity: data.identity ?? s.identity,
+          days: data.days ?? s.days,
+          elevatorLogs: data.elevatorLogs ?? s.elevatorLogs,
+          theaterLogs: data.theaterLogs ?? s.theaterLogs,
+          pulseLogs: data.pulseLogs ?? s.pulseLogs,
+          manumation: data.manumation ?? s.manumation,
+          coachHistory: data.coachHistory ?? s.coachHistory,
+          coachMemory: data.coachMemory ?? s.coachMemory,
+          reminders: data.reminders ?? s.reminders,
+          onboardedAt: data.onboardedAt ?? s.onboardedAt,
+        })),
     }),
     {
       name: "jeremy-os-v1",
@@ -152,8 +234,12 @@ export const useStore = create<Store>()(
         days: s.days,
         elevatorLogs: s.elevatorLogs,
         theaterLogs: s.theaterLogs,
+        pulseLogs: s.pulseLogs,
         manumation: s.manumation,
         coachHistory: s.coachHistory,
+        coachMemory: s.coachMemory,
+        reminders: s.reminders,
+        onboardedAt: s.onboardedAt,
       }),
       onRehydrateStorage: () => (state) => {
         state?.setHydrated();

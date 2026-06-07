@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Check, Moon } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { HydrationGate } from "@/components/HydrationGate";
@@ -13,14 +13,19 @@ import { useStore } from "@/lib/store";
 export default function ReflectionPage() {
   return (
     <HydrationGate>
-      <Reflection />
+      <Suspense>
+        <Reflection />
+      </Suspense>
     </HydrationGate>
   );
 }
 
 function Reflection() {
   const router = useRouter();
-  const existing = useStore((s) => s.getDay().reflection);
+  const params = useSearchParams();
+  const date = params.get("date") || undefined;
+  const dest = date ? `/history/${date}` : "/";
+  const existing = useStore((s) => s.getDay(date).reflection);
   const saveReflection = useStore((s) => s.saveReflection);
 
   const [win, setWin] = useState(existing?.win ?? "");
@@ -39,9 +44,9 @@ function Reflection() {
       learned,
       voiceTranscript: `Win: ${win}\nPressure: ${mostPressure}\nLearned: ${learned}`,
       completedAt: new Date().toISOString(),
-    });
+    }, date);
     setSaved(true);
-    setTimeout(() => router.push("/"), 700);
+    setTimeout(() => router.push(dest), 700);
   };
 
   return (
@@ -49,7 +54,7 @@ function Reflection() {
       <PageHeader
         title="Evening Reflection"
         subtitle="Close the day with honesty, not a scorecard."
-        back="/"
+        back={dest}
       />
 
       <div className="space-y-5">

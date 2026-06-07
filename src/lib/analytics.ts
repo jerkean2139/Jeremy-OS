@@ -2,8 +2,31 @@
 // they're easy to test and reuse across the dashboard, analytics page, and
 // the AI coach context.
 
-import { type DayEntry, type ElevatorLog, type TheaterLog } from "./types";
+import {
+  type DayEntry,
+  type ElevatorLog,
+  type TheaterLog,
+  type PulseEntry,
+  type PulseTag,
+} from "./types";
 import { todayKey } from "./utils";
+
+export function pulsesOn(logs: PulseEntry[], dateKey: string): PulseEntry[] {
+  return logs.filter((l) => startOfDayKey(l.timestamp) === dateKey);
+}
+
+export interface PulseSummary {
+  total: number;
+  byTag: Record<PulseTag, number>;
+  focusRatio: number; // mountain / total, 0..1
+}
+
+export function summarizePulses(entries: PulseEntry[]): PulseSummary {
+  const byTag: Record<PulseTag, number> = { mountain: 0, noise: 0, admin: 0 };
+  for (const e of entries) byTag[e.tag] += 1;
+  const total = entries.length;
+  return { total, byTag, focusRatio: total ? byTag.mountain / total : 0 };
+}
 
 export function startOfDayKey(ts: string): string {
   return todayKey(new Date(ts));
@@ -50,13 +73,22 @@ export interface DailyPoint {
   acts: number;
   sleep: number | null;
   weight: number | null;
+  readiness: number | null;
+  sleepScore: number | null;
+  hrv: number | null;
+  restingHr: number | null;
+  steps: number | null;
   movedMountain: number | null; // 1 / 0 / null
+  pulseMountain: number;
+  pulseNoise: number;
+  focusPct: number | null; // % of pulses on the Mountain that day
 }
 
 export function buildSeries(
   days: Record<string, DayEntry>,
   elevatorLogs: ElevatorLog[],
   theaterLogs: TheaterLog[],
+  pulseLogs: PulseEntry[],
   rangeDays: number,
   now = new Date()
 ): DailyPoint[] {
@@ -66,6 +98,7 @@ export function buildSeries(
     d.setDate(d.getDate() - i);
     const key = todayKey(d);
     const day = days[key];
+    const pulses = summarizePulses(pulsesOn(pulseLogs, key));
     out.push({
       date: key,
       label: d.toLocaleDateString(undefined, { weekday: "short" }),
@@ -74,8 +107,16 @@ export function buildSeries(
       acts: actsOn(theaterLogs, key),
       sleep: day?.sleepHours ?? null,
       weight: day?.weight ?? null,
+      readiness: day?.readiness ?? null,
+      sleepScore: day?.sleepScore ?? null,
+      hrv: day?.hrv ?? null,
+      restingHr: day?.restingHr ?? null,
+      steps: day?.steps ?? null,
       movedMountain:
         day?.movedMountain === true ? 1 : day?.movedMountain === false ? 0 : null,
+      pulseMountain: pulses.byTag.mountain,
+      pulseNoise: pulses.byTag.noise,
+      focusPct: pulses.total ? Math.round(pulses.focusRatio * 100) : null,
     });
   }
   return out;
@@ -130,8 +171,17 @@ export function correlations(series: DailyPoint[]): Correlation[] {
     { label: "Pressure vs Elevator", a: "pressure", b: "floors" },
     { label: "Pressure vs Theater", a: "pressure", b: "acts" },
     { label: "Sleep vs Pressure", a: "sleep", b: "pressure" },
+    { label: "Readiness vs Pressure", a: "readiness", b: "pressure" },
+    { label: "Readiness vs Elevator", a: "readiness", b: "floors" },
+    { label: "HRV vs Pressure", a: "hrv", b: "pressure" },
+    { label: "Sleep quality vs Pressure", a: "sleepScore", b: "pressure" },
+    { label: "Resting HR vs Pressure", a: "restingHr", b: "pressure" },
+    { label: "Steps vs Pressure", a: "steps", b: "pressure" },
+    { label: "Steps vs Elevator", a: "steps", b: "floors" },
     { label: "Weight vs Elevator", a: "weight", b: "floors" },
     { label: "Productive days vs Elevator", a: "movedMountain", b: "floors" },
+    { label: "Focus vs Pressure", a: "focusPct", b: "pressure" },
+    { label: "Focus vs Elevator", a: "focusPct", b: "floors" },
   ];
   const out: Correlation[] = [];
   for (const def of defs) {

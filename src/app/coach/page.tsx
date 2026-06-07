@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Send, Sparkles, Trash2 } from "lucide-react";
+import { Send, Sparkles, Trash2, Brain, Plus, X, Wand2 } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { HydrationGate } from "@/components/HydrationGate";
 import { Button } from "@/components/ui/Button";
@@ -31,9 +31,17 @@ function Coach() {
   const days = useStore((s) => s.days);
   const elevatorLogs = useStore((s) => s.elevatorLogs);
   const theaterLogs = useStore((s) => s.theaterLogs);
+  const pulseLogs = useStore((s) => s.pulseLogs);
+  const coachMemory = useStore((s) => s.coachMemory);
+  const addCoachMemory = useStore((s) => s.addCoachMemory);
+  const removeCoachMemory = useStore((s) => s.removeCoachMemory);
 
   const [input, setInput] = useState("");
   const [thinking, setThinking] = useState(false);
+  const [memoryOpen, setMemoryOpen] = useState(false);
+  const [newMemory, setNewMemory] = useState("");
+  const [learning, setLearning] = useState(false);
+  const [memoryNote, setMemoryNote] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -41,14 +49,14 @@ function Coach() {
   }, [history, thinking]);
 
   const buildContext = () => {
-    const series = buildSeries(days, elevatorLogs, theaterLogs, 14);
+    const series = buildSeries(days, elevatorLogs, theaterLogs, pulseLogs, 14);
     const cors = correlations(series);
     const streak = calcElevatorFreeStreak(elevatorLogs);
     const recent = series
       .slice(-7)
       .map(
         (p) =>
-          `${p.date}: pressure ${p.pressure ?? "—"}, floors ${p.floors}, acts ${p.acts}, sleep ${p.sleep ?? "—"}`
+          `${p.date}: pressure ${p.pressure ?? "—"}, floors ${p.floors}, acts ${p.acts}, sleep ${p.sleep ?? "—"}, focus ${p.focusPct ?? "—"}%`
       )
       .join("\n");
     const pat = cors.map((c) => `${c.label}: r=${c.value}`).join("; ");
@@ -75,6 +83,7 @@ function Coach() {
           mode: "chat",
           messages: priorMessages.slice(-10),
           context: buildContext(),
+          memory: coachMemory,
         }),
       });
       const data = await res.json();
@@ -89,6 +98,47 @@ function Coach() {
     }
   };
 
+  const addMemory = () => {
+    const n = newMemory.trim();
+    if (!n) return;
+    addCoachMemory(n);
+    setNewMemory("");
+  };
+
+  // Ask the coach to distill durable facts from the conversation into memory.
+  const learnFromChat = async () => {
+    if (learning || history.length === 0) return;
+    setLearning(true);
+    setMemoryNote(null);
+    try {
+      const res = await fetch("/api/coach", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          mode: "memory",
+          messages: history.slice(-12).map((m) => ({ role: m.role, content: m.content })),
+          context: buildContext(),
+          memory: coachMemory,
+        }),
+      });
+      const data = await res.json();
+      const lines = String(data.reply ?? "")
+        .split("\n")
+        .map((l) => l.replace(/^[-*•\d.\s]+/, "").trim())
+        .filter(Boolean);
+      if (lines.length === 0) {
+        setMemoryNote("Learning from chat needs the AI coach (no key configured). You can add notes by hand.");
+      } else {
+        lines.forEach((l) => addCoachMemory(l));
+        setMemoryOpen(true);
+      }
+    } catch {
+      setMemoryNote("Couldn't reach the coach just now.");
+    } finally {
+      setLearning(false);
+    }
+  };
+
   return (
     <div className="flex h-[calc(100dvh-7rem)] flex-col">
       <div className="flex items-start justify-between">
@@ -96,16 +146,101 @@ function Coach() {
           title="Recovery Coach"
           subtitle="A mirror and a strategist. Not a therapist."
         />
-        {history.length > 0 && (
+        <div className="mt-1 flex items-center gap-1">
           <button
-            onClick={clearCoach}
-            className="mt-1 rounded-full p-2 text-mist-500 hover:text-ember-400"
-            aria-label="Clear conversation"
+            onClick={() => setMemoryOpen((o) => !o)}
+            className={cn(
+              "relative rounded-full p-2 hover:text-mist-100",
+              memoryOpen ? "text-sage-400" : "text-mist-500"
+            )}
+            aria-label="Coach memory"
           >
-            <Trash2 className="h-4 w-4" />
+            <Brain className="h-4 w-4" />
+            {coachMemory.length > 0 && (
+              <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-sage-500/90 px-1 text-[9px] font-semibold text-ink-950">
+                {coachMemory.length}
+              </span>
+            )}
           </button>
-        )}
+          {history.length > 0 && (
+            <button
+              onClick={clearCoach}
+              className="rounded-full p-2 text-mist-500 hover:text-ember-400"
+              aria-label="Clear conversation"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          )}
+        </div>
       </div>
+
+      {memoryOpen && (
+        <div className="mb-3 rounded-2xl border border-ink-700/60 bg-ink-850/70 p-4">
+          <div className="mb-2 flex items-center gap-2 text-sage-400">
+            <Brain className="h-4 w-4" />
+            <span className="text-sm font-medium">Coach remembers</span>
+          </div>
+          <p className="mb-3 text-xs text-mist-500">
+            Durable facts the coach carries into every reply. Edit anytime.
+          </p>
+
+          {coachMemory.length > 0 ? (
+            <ul className="mb-3 space-y-1.5">
+              {coachMemory.map((m, i) => (
+                <li
+                  key={i}
+                  className="flex items-start gap-2 rounded-lg border border-ink-700/50 bg-ink-900/40 px-3 py-2 text-sm text-mist-200"
+                >
+                  <span className="mt-0.5 text-sage-500">•</span>
+                  <span className="min-w-0 flex-1">{m}</span>
+                  <button
+                    onClick={() => removeCoachMemory(i)}
+                    className="rounded-full p-0.5 text-mist-600 hover:text-ember-400"
+                    aria-label="Forget this"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="mb-3 text-sm text-mist-500">Nothing yet. Add a note or learn from a chat.</p>
+          )}
+
+          <div className="flex items-center gap-2">
+            <input
+              value={newMemory}
+              onChange={(e) => setNewMemory(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  addMemory();
+                }
+              }}
+              placeholder="Add something to remember…"
+              className="flex-1 rounded-xl border border-ink-700 bg-ink-900/60 px-3 py-2 text-sm text-mist-50 placeholder:text-mist-500 focus:border-sage-500/50 focus:outline-none"
+            />
+            <button
+              onClick={addMemory}
+              disabled={!newMemory.trim()}
+              className="rounded-xl bg-ink-700/70 p-2 text-mist-100 hover:bg-ink-600 disabled:opacity-40"
+              aria-label="Add memory"
+            >
+              <Plus className="h-4 w-4" />
+            </button>
+          </div>
+
+          <button
+            onClick={learnFromChat}
+            disabled={learning || history.length === 0}
+            className="mt-2.5 inline-flex items-center gap-1.5 text-xs text-sky-400 hover:text-sky-300 disabled:opacity-40"
+          >
+            <Wand2 className="h-3.5 w-3.5" />
+            {learning ? "Learning…" : "Learn from this chat"}
+          </button>
+          {memoryNote && <p className="mt-2 text-xs text-mist-500">{memoryNote}</p>}
+        </div>
+      )}
 
       <div ref={scrollRef} className="no-scrollbar flex-1 space-y-3 overflow-y-auto pb-4">
         {history.length === 0 && (

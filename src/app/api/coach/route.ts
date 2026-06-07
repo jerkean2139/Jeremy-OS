@@ -23,10 +23,11 @@ PRIMARY JOB: help him see patterns between Pressure, Elevator, Theater, producti
 STYLE: short. Mobile-readable. 2-5 sentences unless asked for more. Speak to him as "you". End with awareness or one small action, not a lecture.`;
 
 interface Body {
-  mode?: "chat" | "summary";
+  mode?: "chat" | "summary" | "insight" | "memory" | "review";
   text?: string;
   messages?: { role: "user" | "assistant"; content: string }[];
   context?: string;
+  memory?: string[];
 }
 
 export async function POST(req: NextRequest) {
@@ -38,7 +39,7 @@ export async function POST(req: NextRequest) {
   }
 
   const apiKey = process.env.OPENAI_API_KEY;
-  const model = process.env.OPENAI_MODEL || "gpt-4o-mini";
+  const model = process.env.OPENAI_MODEL || "gpt-5.4-mini";
 
   // --- Local fallback (no API key configured) ---
   if (!apiKey) {
@@ -49,13 +50,41 @@ export async function POST(req: NextRequest) {
     const messages: { role: string; content: string }[] = [
       { role: "system", content: SYSTEM_PROMPT },
     ];
+    if (body.memory?.length) {
+      messages.push({
+        role: "system",
+        content: `What you remember about him (durable context from past sessions):\n${body.memory
+          .map((m) => `- ${m}`)
+          .join("\n")}`,
+      });
+    }
     if (body.context) {
       messages.push({ role: "system", content: `Recent data:\n${body.context}` });
     }
-    if (body.mode === "summary") {
+    if (body.mode === "memory") {
+      messages.push({
+        role: "user",
+        content:
+          "From everything above (our conversation and the data), write 1-3 short, durable facts worth remembering about me for future sessions — recurring patterns, triggers, what works, what matters. One per line, no bullets, no preamble, under 12 words each. Skip anything already obvious or trivial.",
+      });
+    } else if (body.mode === "summary") {
       messages.push({
         role: "user",
         content: `Reflect this morning check-in back in 2-3 calm sentences. Name the mountain and the pressure, then one grounding line.\n\n${body.text ?? ""}`,
+      });
+    } else if (body.mode === "insight") {
+      messages.push({
+        role: "user",
+        content: `Looking at the data above, surface ONE proactive insight he hasn't asked for — the single most useful thing to notice today. 2-3 calm sentences, then one small concrete action. No greeting, no preamble, no shame. ${
+          body.text ? `A draft observation to refine (keep its meaning): ${body.text}` : ""
+        }`,
+      });
+    } else if (body.mode === "review") {
+      messages.push({
+        role: "user",
+        content: `Write a short weekly reflection (3-4 calm sentences) from the data above. Name one genuine win, one pattern worth carrying forward, and one focus for next week. Warm and direct, no scorecard, no shame. ${
+          body.text ? `Facts to ground it in: ${body.text}` : ""
+        }`,
       });
     } else if (body.messages?.length) {
       messages.push(...body.messages);
@@ -94,6 +123,24 @@ function localEngine(body: Body): string {
     const t = (body.text ?? "").replace(/\n+/g, " ").trim();
     if (!t) return "A quiet start. Name your mountain, name the pressure, then take the first step.";
     return `Here's your morning, reflected back: ${t}. One mountain. Let the rest be noise. Take the first small step now.`;
+  }
+
+  // For insights, the deterministic engine already wrote a good line — pass it through.
+  if (body.mode === "insight") {
+    return (body.text ?? "").trim() || "Steady as you are. Pick one Mountain step and take it now.";
+  }
+
+  // Memory extraction needs the model; offline we don't invent facts.
+  if (body.mode === "memory") {
+    return "";
+  }
+
+  // Weekly review: offline, lean on the facts the engine already assembled.
+  if (body.mode === "review") {
+    const t = (body.text ?? "").replace(/\n+/g, " ").trim();
+    return t
+      ? `Here's your week, plainly: ${t} Carry the win forward, and let the rest be noise.`
+      : "A quiet week on the page. Name one win, one pattern, and one mountain for the days ahead.";
   }
 
   const last =

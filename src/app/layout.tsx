@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { BottomNav } from "@/components/BottomNav";
 import { PWARegister } from "@/components/PWARegister";
+import { SyncProvider } from "@/components/SyncProvider";
+import { Onboarding } from "@/components/Onboarding";
 
 export const metadata: Metadata = {
   title: "Jeremy OS",
@@ -32,10 +34,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" className="dark">
       <body>
         <PWARegister />
+        <SyncProvider />
         <main className="mx-auto min-h-[100dvh] w-full max-w-lg px-4 pb-28 pt-6">
           {children}
         </main>
         <BottomNav />
+        <Onboarding />
       </body>
     </html>
   );
