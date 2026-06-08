@@ -64,12 +64,20 @@ export interface DayEntry {
   reflection?: DailyReflection;
 }
 
+// A movement part of the ritual that can be set aside in the morning and
+// made up later in the day (e.g. a walk at lunch).
+export type RoutinePart = "stretch" | "walk";
+
 // The morning ritual: check-in → stretch → walk → complete. Durations in seconds.
 export interface RoutineLog {
   completedAt: string; // ISO
   totalSec: number; // whole-ritual elapsed
   stretchSec: number;
   walkSec: number;
+  // Parts skipped this morning — still open to make up later in the day.
+  skipped?: RoutinePart[];
+  // Make-up sessions logged later (e.g. a lunchtime walk).
+  makeups?: { part: RoutinePart; at: string; sec: number; steps?: number }[];
 }
 
 export interface MorningCheckIn {

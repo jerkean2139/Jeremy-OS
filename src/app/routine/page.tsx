@@ -34,6 +34,7 @@ import {
   WALK_MAX_SEC,
   WALK_PROMPTS,
   fmtClock,
+  computeSkips,
 } from "@/lib/routine";
 import { calcElevatorFreeStreak } from "@/lib/analytics";
 import { clampDay } from "@/lib/bible";
@@ -287,6 +288,12 @@ function StretchStep({ onDone }: { onDone: (sec: number) => void }) {
       <Button size="lg" className="w-full" onClick={() => onDone(spentRef.current || STRETCH_TOTAL_SEC)}>
         {finished ? "Stretch done — start walk" : "I'm done — start walk"} <Footprints className="h-5 w-5" />
       </Button>
+      <button
+        onClick={() => onDone(0)}
+        className="w-full py-1 text-center text-sm text-mist-500 hover:text-mist-300"
+      >
+        Skip — I&apos;ll stretch later today
+      </button>
     </div>
   );
 }
@@ -368,6 +375,12 @@ function WalkStep({ onDone }: { onDone: (sec: number, steps: number | undefined)
       <Button size="lg" className="w-full" onClick={finish}>
         <Check className="h-5 w-5" /> Finish walk
       </Button>
+      <button
+        onClick={() => onDone(0, undefined)}
+        className="w-full py-1 text-center text-sm text-mist-500 hover:text-mist-300"
+      >
+        Skip — I&apos;ll walk later today
+      </button>
     </div>
   );
 }
@@ -472,12 +485,14 @@ function CompleteStep({
   useEffect(() => {
     if (savedRef.current) return;
     savedRef.current = true;
+    const skipped = computeSkips(stretchSec, walkSec);
     updateDay({
       routine: {
         completedAt: new Date().toISOString(),
         totalSec,
         stretchSec,
         walkSec,
+        ...(skipped.length ? { skipped } : {}),
       },
       ...(steps != null ? { steps } : {}),
     });

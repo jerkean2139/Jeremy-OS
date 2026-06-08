@@ -9,6 +9,7 @@ import {
   type TheaterLog,
   type MorningCheckIn,
   type DailyReflection,
+  type RoutinePart,
   type ManumationState,
   type CoachMessage,
   type PulseEntry,
@@ -48,6 +49,8 @@ interface StoreActions {
 
   getDay: (date?: string) => DayEntry;
   updateDay: (patch: Partial<DayEntry>, date?: string) => void;
+  // Log a movement part that was skipped this morning, later in the day.
+  logRoutineMakeup: (part: RoutinePart, data: { sec: number; steps?: number }) => void;
 
   setIdentity: (lines: string[]) => void;
 
@@ -163,6 +166,44 @@ export const useStore = create<Store>()(
         set((s) => {
           const current = s.days[key] ?? emptyDay(key);
           return { days: { ...s.days, [key]: { ...current, ...patch } } };
+        });
+      },
+
+      logRoutineMakeup: (part, data) => {
+        const key = todayKey();
+        const sec = Math.max(0, Math.round(data.sec || 0));
+        set((s) => {
+          const current = s.days[key] ?? emptyDay(key);
+          const base = current.routine ?? {
+            completedAt: new Date().toISOString(),
+            totalSec: 0,
+            stretchSec: 0,
+            walkSec: 0,
+          };
+          const routine = {
+            ...base,
+            totalSec: base.totalSec + sec,
+            stretchSec: base.stretchSec + (part === "stretch" ? sec : 0),
+            walkSec: base.walkSec + (part === "walk" ? sec : 0),
+            skipped: (base.skipped ?? []).filter((p) => p !== part),
+            makeups: [
+              ...(base.makeups ?? []),
+              {
+                part,
+                at: new Date().toISOString(),
+                sec,
+                ...(data.steps != null ? { steps: data.steps } : {}),
+              },
+            ],
+          };
+          // Walk make-ups add to the day's step total.
+          const steps =
+            part === "walk" && data.steps != null
+              ? (current.steps ?? 0) + data.steps
+              : current.steps;
+          return {
+            days: { ...s.days, [key]: { ...current, routine, steps } },
+          };
         });
       },
 

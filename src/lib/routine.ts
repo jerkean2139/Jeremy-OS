@@ -2,7 +2,7 @@
 // check-in → stretch (5 min) → walk (30–45 min) → complete.
 // Pure data + helpers; the page wires the timers and voice.
 
-import { type DayEntry } from "./types";
+import { type DayEntry, type RoutineLog, type RoutinePart } from "./types";
 import { todayKey } from "./utils";
 
 export interface StretchMove {
@@ -32,6 +32,31 @@ export const WALK_PROMPTS = [
   "Good. Let the noise fall away. What's the first move when you sit down?",
   "Almost there. Picture the day going well. Then go make it real.",
 ];
+
+// The movement parts, with copy for the "make it up later" flow.
+export const ROUTINE_PARTS: {
+  key: RoutinePart;
+  label: string;
+  done: string; // past-tense confirmation
+  defaultMin: number; // sensible duration for a one-tap make-up
+}[] = [
+  { key: "stretch", label: "Stretch", done: "Stretched", defaultMin: 5 },
+  { key: "walk", label: "Walk", done: "Walked", defaultMin: 20 },
+];
+
+// Which movement parts were set aside this morning (skipped = zero seconds),
+// derived from the saved durations.
+export function computeSkips(stretchSec: number, walkSec: number): RoutinePart[] {
+  const skipped: RoutinePart[] = [];
+  if (stretchSec === 0) skipped.push("stretch");
+  if (walkSec === 0) skipped.push("walk");
+  return skipped;
+}
+
+// Parts still open to make up today (skipped this morning, not yet logged).
+export function openMakeups(log?: RoutineLog | null): RoutinePart[] {
+  return log?.skipped ?? [];
+}
 
 export function fmtClock(totalSec: number): string {
   const s = Math.max(0, Math.floor(totalSec));
