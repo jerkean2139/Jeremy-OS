@@ -16,7 +16,7 @@ import { ScriptureCard } from "@/components/dashboard/ScriptureCard";
 import { RitualMakeupCard } from "@/components/dashboard/RitualMakeupCard";
 import { StatTile } from "@/components/StatTile";
 import { useStore } from "@/lib/store";
-import { MISSION_STATEMENT } from "@/lib/codewords";
+import { MISSION_STATEMENT, PERSONAL_CREED } from "@/lib/codewords";
 import { calcElevatorFreeStreak, floorsOn, actsOn } from "@/lib/analytics";
 import { activeHabits, habitDoneToday } from "@/lib/habits";
 import { calcRoutineStreak } from "@/lib/routine";
@@ -64,6 +64,7 @@ function Dashboard() {
             {greeting()}, Jeremy
           </h1>
           <p className="mt-1.5 text-sm italic text-sage-400">{MISSION_STATEMENT}</p>
+          <p className="mt-1 text-xs font-medium tracking-wide text-mist-400">{PERSONAL_CREED}</p>
         </div>
         <div className="mt-1 flex items-center gap-1">
           <Link

@@ -31,6 +31,10 @@ export const CODE_WORDS = {
 
 export const MISSION_STATEMENT = "Reduce noise. Increase clarity. Move the mountain.";
 
+// A personal accountability creed — ownership, no one's coming to save you.
+// Shown at the daily thresholds (the lock screen, Today) as a quiet reminder.
+export const PERSONAL_CREED = "If it's to be, it's up to me.";
+
 export const DEFAULT_IDENTITY = [
   "I help overwhelmed business owners escape chaos.",
   "I build systems that create freedom.",
