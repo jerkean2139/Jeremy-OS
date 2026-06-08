@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { PERSONAL_CREED } from "@/lib/codewords";
 
 export const runtime = "nodejs";
 
@@ -38,6 +39,17 @@ interface Body {
   memory?: string[];
 }
 
+// The coach signs off its one-shot "briefing" outputs (not live chat, not
+// memory extraction) with Jeremy's accountability creed — ownership, his words.
+const BRIEFING_MODES = new Set<Body["mode"]>(["summary", "insight", "review"]);
+
+function appendCreed(mode: Body["mode"], reply: string): string {
+  const r = (reply ?? "").trim();
+  if (!r || !BRIEFING_MODES.has(mode)) return r;
+  if (r.includes(PERSONAL_CREED)) return r; // don't double up if the model added it
+  return `${r}\n\n— ${PERSONAL_CREED}`;
+}
+
 export async function POST(req: NextRequest) {
   let body: Body;
   try {
@@ -51,7 +63,10 @@ export async function POST(req: NextRequest) {
 
   // --- Local fallback (no API key configured) ---
   if (!apiKey) {
-    return NextResponse.json({ reply: localEngine(body), source: "local" });
+    return NextResponse.json({
+      reply: appendCreed(body.mode, localEngine(body)),
+      source: "local",
+    });
   }
 
   try {
@@ -115,13 +130,19 @@ export async function POST(req: NextRequest) {
     });
 
     if (!res.ok) {
-      return NextResponse.json({ reply: localEngine(body), source: "local-fallback" });
+      return NextResponse.json({
+        reply: appendCreed(body.mode, localEngine(body)),
+        source: "local-fallback",
+      });
     }
     const data = await res.json();
     const reply = data.choices?.[0]?.message?.content?.trim() ?? localEngine(body);
-    return NextResponse.json({ reply, source: "openai" });
+    return NextResponse.json({ reply: appendCreed(body.mode, reply), source: "openai" });
   } catch {
-    return NextResponse.json({ reply: localEngine(body), source: "local-fallback" });
+    return NextResponse.json({
+      reply: appendCreed(body.mode, localEngine(body)),
+      source: "local-fallback",
+    });
   }
 }
 
