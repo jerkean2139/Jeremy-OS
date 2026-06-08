@@ -4,7 +4,7 @@ import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Lock, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/Button";
-import { MISSION_STATEMENT } from "@/lib/codewords";
+import { MISSION_STATEMENT, PERSONAL_CREED } from "@/lib/codewords";
 
 export default function UnlockPage() {
   return (
@@ -56,6 +56,7 @@ function Unlock() {
 
       <h1 className="text-xl font-semibold tracking-tight text-mist-50">Jeremy OS</h1>
       <p className="mt-1 text-sm italic text-mist-400">{MISSION_STATEMENT}</p>
+      <p className="mt-3 text-sm font-medium tracking-wide text-sage-300">{PERSONAL_CREED}</p>
 
       <form onSubmit={submit} className="mt-8 w-full max-w-xs">
         <input
