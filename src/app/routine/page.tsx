@@ -20,6 +20,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { HydrationGate } from "@/components/HydrationGate";
 import { VoiceField } from "@/components/VoiceField";
 import { VoiceChat } from "@/components/VoiceChat";
+import { VoicePicker } from "@/components/VoicePicker";
 import { SlackBriefing } from "@/components/SlackBriefing";
 import { ScriptureReader } from "@/components/ScriptureReader";
 import { Card, CardContent } from "@/components/ui/Card";
@@ -151,6 +152,7 @@ function Intro({ onStart }: { onStart: () => void }) {
       <p className="px-1 text-center text-sm text-mist-500">
         One calm hour or so. We&apos;ll time it together and log everything at the end.
       </p>
+      <VoicePicker />
       <Button size="lg" className="w-full" onClick={onStart}>
         <Play className="h-5 w-5" /> Start ritual
       </Button>

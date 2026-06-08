@@ -1,15 +1,33 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { loadVoicePreference, pickBestVoice } from "@/lib/voices";
+
+// Keep the available voices warm. getVoices() is empty on first call in some
+// browsers until the async `voiceschanged` event fires, so we cache + refresh.
+function getVoices(): SpeechSynthesisVoice[] {
+  if (typeof window === "undefined" || !window.speechSynthesis) return [];
+  return window.speechSynthesis.getVoices();
+}
 
 // Text-to-speech with a premium-first, offline-safe strategy:
 //   1. Try /api/tts (natural OpenAI voice) — returns audio when a key is set.
-//   2. Fall back to the browser's speechSynthesis when no audio comes back.
+//   2. Fall back to the browser's speechSynthesis when no audio comes back,
+//      choosing the most natural installed voice instead of the OS default.
 // Must be triggered by a user gesture on mobile (the ritual is tap-driven).
 export function useSpeech() {
   const [speaking, setSpeaking] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const urlRef = useRef<string | null>(null);
+
+  // Prime the voice list as early as possible (some browsers populate late).
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.speechSynthesis) return;
+    getVoices();
+    const handler = () => getVoices();
+    window.speechSynthesis.addEventListener("voiceschanged", handler);
+    return () => window.speechSynthesis.removeEventListener("voiceschanged", handler);
+  }, []);
 
   const cleanupAudio = useCallback(() => {
     if (audioRef.current) {
@@ -36,7 +54,12 @@ export function useSpeech() {
       return;
     }
     const u = new SpeechSynthesisUtterance(text);
-    u.rate = 0.98;
+    const voice = pickBestVoice(getVoices(), loadVoicePreference());
+    if (voice) {
+      u.voice = voice;
+      u.lang = voice.lang;
+    }
+    u.rate = 0.96; // a touch slower — calm mentor, not a news anchor
     u.pitch = 1;
     u.onend = () => setSpeaking(false);
     u.onerror = () => setSpeaking(false);
