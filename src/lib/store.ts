@@ -113,6 +113,8 @@ interface StoreActions {
   removeCoachMemory: (index: number) => void;
 
   // Replace the whole document from a backup file (data export/restore).
+  // Toggle a Slack item as handled/unhandled on your end (swipe to clear).
+  toggleSlackDone: (id: string) => void;
   importState: (data: Partial<JeremyState>) => void;
 }
 
@@ -151,6 +153,7 @@ export const useStore = create<Store>()(
       habits: [],
       keyHabitLaws: DEFAULT_KEY_HABIT_LAWS,
       scorecard: [],
+      slackDone: [],
       onboardedAt: null,
 
       _hydrated: false,
@@ -426,6 +429,14 @@ export const useStore = create<Store>()(
       removeCoachMemory: (index) =>
         set((s) => ({ coachMemory: s.coachMemory.filter((_, i) => i !== index) })),
 
+      toggleSlackDone: (id) =>
+        set((s) => {
+          const done = s.slackDone ?? [];
+          return {
+            slackDone: done.includes(id) ? done.filter((x) => x !== id) : [...done, id],
+          };
+        }),
+
       importState: (data) =>
         set((s) => ({
           identity: data.identity ?? s.identity,
@@ -461,6 +472,7 @@ export const useStore = create<Store>()(
         habits: s.habits,
         keyHabitLaws: s.keyHabitLaws,
         scorecard: s.scorecard,
+        slackDone: s.slackDone,
         onboardedAt: s.onboardedAt,
       }),
       onRehydrateStorage: () => (state) => {
