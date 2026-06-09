@@ -277,6 +277,8 @@ export interface JeremyState {
   keyHabitLaws: KeyHabitLaws;
   // Habit Scorecard — awareness inventory of current habits.
   scorecard: ScorecardItem[];
+  // Slack items you've swiped away as handled (keyed per message).
+  slackDone?: string[];
   // ISO timestamp of when first-run onboarding was completed; null until then.
   onboardedAt?: string | null;
 }

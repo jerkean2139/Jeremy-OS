@@ -1,10 +1,17 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Slack, RefreshCw, AtSign, Hash, MessageCircle, Users } from "lucide-react";
+import { Slack, RefreshCw, AtSign, Hash, MessageCircle, Users, RotateCcw } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/Card";
-import type { SlackBriefingData, SlackUnread } from "@/lib/slack";
+import { SwipeRow } from "@/components/SwipeRow";
+import { useStore } from "@/lib/store";
+import type { SlackBriefingData, SlackUnread, SlackMention } from "@/lib/slack";
 import { cn } from "@/lib/utils";
+
+// Stable per-message keys so "handled" survives reloads but new messages in a
+// channel (changed latest text) resurface.
+const unreadKey = (u: SlackUnread) => `u:${u.id}:${u.latest ?? ""}`;
+const mentionKey = (m: SlackMention) => `m:${m.channel}:${m.ts}`;
 
 // The 7am Slack briefing: a calm AI triage on top, browsable unreads below.
 // Used both as a dashboard card and at the end of the Morning Ritual.
@@ -102,7 +109,23 @@ function StatusPill({ loading, data }: { loading: boolean; data: SlackBriefingDa
 }
 
 function Briefing({ data }: { data: SlackBriefingData }) {
-  const quiet = data.unreads.length === 0 && data.mentions.length === 0;
+  const slackDone = useStore((s) => s.slackDone);
+  const toggleDone = useStore((s) => s.toggleSlackDone);
+  const done = new Set(slackDone ?? []);
+  const [showHandled, setShowHandled] = useState(false);
+
+  const mentions = data.mentions.slice(0, 5);
+  const activeMentions = mentions.filter((m) => !done.has(mentionKey(m)));
+  const activeUnreads = data.unreads.filter((u) => !done.has(unreadKey(u)));
+  const handledCount =
+    mentions.filter((m) => done.has(mentionKey(m))).length +
+    data.unreads.filter((u) => done.has(unreadKey(u))).length;
+
+  const handledMentions = mentions.filter((m) => done.has(mentionKey(m)));
+  const handledUnreads = data.unreads.filter((u) => done.has(unreadKey(u)));
+
+  const nothingRaw = data.unreads.length === 0 && data.mentions.length === 0;
+  const allClear = !nothingRaw && activeMentions.length === 0 && activeUnreads.length === 0;
 
   return (
     <div className="space-y-3">
@@ -112,45 +135,104 @@ function Briefing({ data }: { data: SlackBriefingData }) {
         </p>
       )}
 
-      {data.mentions.length > 0 && (
+      {(activeMentions.length > 0 || activeUnreads.length > 0) && (
+        <p className="px-1 text-[11px] text-mist-600">Swipe a message left to clear it.</p>
+      )}
+
+      {activeMentions.length > 0 && (
         <div className="space-y-1.5">
           <div className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.16em] text-mist-500">
             <AtSign className="h-3 w-3" /> Mentions
           </div>
-          {data.mentions.slice(0, 5).map((m, i) => (
-            <a
-              key={`${m.ts}-${i}`}
-              href={m.permalink}
-              target="_blank"
-              rel="noreferrer"
-              className="block rounded-lg bg-ink-800/50 px-3 py-2 transition-colors hover:bg-ink-800"
-            >
-              <div className="text-[11px] text-mist-500">{m.channel}</div>
-              <div className="line-clamp-2 text-sm text-mist-200">{m.text || "—"}</div>
-            </a>
+          {activeMentions.map((m) => (
+            <SwipeRow key={mentionKey(m)} onComplete={() => toggleDone(mentionKey(m))}>
+              <MentionRow m={m} />
+            </SwipeRow>
           ))}
         </div>
       )}
 
-      {data.unreads.length > 0 && (
+      {activeUnreads.length > 0 && (
         <div className="space-y-1.5">
           <div className="text-[11px] font-medium uppercase tracking-[0.16em] text-mist-500">
             Unread
           </div>
           <div className="max-h-64 space-y-1.5 overflow-y-auto">
-            {data.unreads.map((u) => (
-              <UnreadRow key={u.id} u={u} />
+            {activeUnreads.map((u) => (
+              <SwipeRow key={unreadKey(u)} onComplete={() => toggleDone(unreadKey(u))}>
+                <UnreadRow u={u} />
+              </SwipeRow>
             ))}
           </div>
         </div>
       )}
 
-      {quiet && (
+      {nothingRaw && (
         <p className="py-2 text-center text-sm text-mist-500">
           Slack is quiet. Nothing&apos;s waiting on you.
         </p>
       )}
+
+      {allClear && (
+        <p className="py-2 text-center text-sm text-sage-300">
+          All clear — you&apos;ve handled everything.
+        </p>
+      )}
+
+      {handledCount > 0 && (
+        <div className="border-t border-ink-700/60 pt-2">
+          <button
+            onClick={() => setShowHandled((v) => !v)}
+            className="text-[11px] font-medium uppercase tracking-[0.16em] text-mist-500 hover:text-mist-300"
+          >
+            {showHandled ? "Hide" : "Show"} handled · {handledCount}
+          </button>
+          {showHandled && (
+            <div className="mt-2 space-y-1.5">
+              {handledMentions.map((m) => (
+                <HandledRow key={mentionKey(m)} onUndo={() => toggleDone(mentionKey(m))}>
+                  <MentionRow m={m} />
+                </HandledRow>
+              ))}
+              {handledUnreads.map((u) => (
+                <HandledRow key={unreadKey(u)} onUndo={() => toggleDone(unreadKey(u))}>
+                  <UnreadRow u={u} />
+                </HandledRow>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
+  );
+}
+
+function HandledRow({ onUndo, children }: { onUndo: () => void; children: React.ReactNode }) {
+  return (
+    <div className="flex items-center gap-2">
+      <div className="min-w-0 flex-1 opacity-50">{children}</div>
+      <button
+        onClick={onUndo}
+        className="shrink-0 rounded-full p-1.5 text-mist-500 hover:bg-ink-800 hover:text-mist-200"
+        aria-label="Mark as not handled"
+      >
+        <RotateCcw className="h-3.5 w-3.5" />
+      </button>
+    </div>
+  );
+}
+
+function MentionRow({ m }: { m: SlackMention }) {
+  return (
+    <a
+      href={m.permalink}
+      target="_blank"
+      rel="noreferrer"
+      className="block rounded-lg bg-ink-800/50 px-3 py-2 transition-colors hover:bg-ink-800"
+    >
+      <div className="text-[11px] text-mist-500">{m.channel}</div>
+      <div className="line-clamp-2 text-sm text-mist-200">{m.text || "—"}</div>
+    </a>
   );
 }
 
