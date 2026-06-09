@@ -14,6 +14,7 @@ import { InsightCard } from "@/components/dashboard/InsightCard";
 import { SlackBriefing } from "@/components/SlackBriefing";
 import { ScriptureCard } from "@/components/dashboard/ScriptureCard";
 import { RitualMakeupCard } from "@/components/dashboard/RitualMakeupCard";
+import { CostMeterCard } from "@/components/dashboard/CostMeterCard";
 import { StatTile } from "@/components/StatTile";
 import { useStore } from "@/lib/store";
 import { MISSION_STATEMENT, PERSONAL_CREED } from "@/lib/codewords";
@@ -216,6 +217,9 @@ function Dashboard() {
           <div className="text-xs text-mist-500">Your last 7 days, in focus</div>
         </div>
       </Link>
+
+      {/* Estimated AI spend */}
+      <CostMeterCard />
 
       {/* Quick actions */}
       <div className="grid grid-cols-2 gap-3">

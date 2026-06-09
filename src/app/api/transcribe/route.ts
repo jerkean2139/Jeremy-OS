@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "transcription_failed" }, { status: 502 });
     }
     const data = await res.json();
-    return NextResponse.json({ text: (data.text ?? "").trim() });
+    return NextResponse.json({ text: (data.text ?? "").trim(), model });
   } catch (err) {
     console.error("[transcribe] request failed", err);
     return NextResponse.json({ error: "transcription_failed" }, { status: 502 });

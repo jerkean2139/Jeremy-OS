@@ -5,6 +5,7 @@ import { Mic, Square, Volume2, Loader2 } from "lucide-react";
 import { useVoice } from "@/hooks/useVoice";
 import { useRecorder } from "@/hooks/useRecorder";
 import { useSpeech } from "@/hooks/useSpeech";
+import { askCoach } from "@/lib/ai-client";
 import { cn } from "@/lib/utils";
 
 interface Turn {
@@ -105,17 +106,10 @@ export function VoiceChat({
     setTurns(next);
     setThinking(true);
     try {
-      const res = await fetch("/api/coach", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          mode: "chat",
-          messages: next.slice(-10),
-          context,
-          memory,
-        }),
-      });
-      const data = await res.json();
+      const data = await askCoach(
+        { mode: "chat", messages: next.slice(-10), context, memory },
+        "coach"
+      );
       const reply = String(data.reply ?? "I'm here.");
       setTurns((t) => [...t, { role: "assistant", content: reply }]);
       speak(reply);

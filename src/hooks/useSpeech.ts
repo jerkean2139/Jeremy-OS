@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { loadVoicePreference, pickBestVoice } from "@/lib/voices";
+import { meterTts } from "@/lib/ai-client";
 
 // Keep the available voices warm. getVoices() is empty on first call in some
 // browsers until the async `voiceschanged` event fires, so we cache + refresh.
@@ -80,6 +81,10 @@ export function useSpeech() {
         });
         const type = res.headers.get("content-type") || "";
         if (res.ok && type.includes("audio")) {
+          // Meter the premium voice spend (headers set by /api/tts).
+          const model = res.headers.get("x-ai-model");
+          const chars = Number(res.headers.get("x-ai-chars") || 0);
+          if (model && chars) meterTts(model, chars);
           const blob = await res.blob();
           const url = URL.createObjectURL(blob);
           urlRef.current = url;

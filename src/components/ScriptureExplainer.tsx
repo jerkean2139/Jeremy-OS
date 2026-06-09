@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Sparkles, Send, Loader2, X, Bookmark } from "lucide-react";
+import { askCoach } from "@/lib/ai-client";
 import { cn } from "@/lib/utils";
 
 export interface Passage {
@@ -46,17 +47,15 @@ export function ScriptureExplainer({
     setTurns(displayTurns);
     setThinking(true);
     try {
-      const res = await fetch("/api/coach", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      const data = await askCoach(
+        {
           mode: "scripture",
           passage: passageText,
           // Seed frames the task; the visible turns carry the conversation.
           messages: [{ role: "user", content: SEED }, ...displayTurns].slice(-10),
-        }),
-      });
-      const data = await res.json();
+        },
+        "scripture"
+      );
       setTurns([...displayTurns, { role: "assistant", content: String(data.reply ?? "…") }]);
     } catch {
       setTurns([
