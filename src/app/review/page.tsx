@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/Button";
 import { StatTile } from "@/components/StatTile";
 import { useStore } from "@/lib/store";
 import { buildWeeklyReview, reviewContext } from "@/lib/review";
+import { askCoach } from "@/lib/ai-client";
 import { todayKey, pressureColor } from "@/lib/utils";
 
 export default function ReviewPage() {
@@ -55,12 +56,7 @@ function Review() {
     if (!review || reflecting) return;
     setReflecting(true);
     try {
-      const res = await fetch("/api/coach", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mode: "review", text: reviewContext(review) }),
-      });
-      const data = await res.json();
+      const data = await askCoach({ mode: "review", text: reviewContext(review) }, "review");
       const text = String(data?.reply ?? "").trim();
       if (text) {
         setNarrative(text);

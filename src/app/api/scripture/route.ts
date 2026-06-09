@@ -25,6 +25,9 @@ export interface ScriptureResponse {
   nt: { label: string; chapters: ChapterText[] };
   summary?: string;
   aiConfigured?: boolean; // whether the rich AI "what it means" is available
+  summaryModel?: string;
+  summaryUsage?: { prompt_tokens?: number; completion_tokens?: number };
+  cached?: boolean; // true when served from the in-memory cache (no new cost)
 }
 
 const cache = new Map<number, ScriptureResponse>();
@@ -65,15 +68,17 @@ export async function GET(req: NextRequest) {
   const reading = readingForDay(dayParam);
   const day = reading.day;
 
+  // Served from cache: the model already ran, so flag it so the client doesn't
+  // re-meter a cost that wasn't incurred.
   const cached = cache.get(day);
-  if (cached) return NextResponse.json(cached);
+  if (cached) return NextResponse.json({ ...cached, cached: true });
 
   const [otChapters, ntChapters] = await Promise.all([
     Promise.all(reading.ot.chapters.map(fetchChapter)),
     Promise.all(reading.nt.chapters.map(fetchChapter)),
   ]);
 
-  const summary = await summarize(reading.ot.label, reading.nt.label, [
+  const summarized = await summarize(reading.ot.label, reading.nt.label, [
     ...otChapters,
     ...ntChapters,
   ]);
@@ -83,8 +88,10 @@ export async function GET(req: NextRequest) {
     total: reading.total,
     ot: { label: reading.ot.label, chapters: otChapters },
     nt: { label: reading.nt.label, chapters: ntChapters },
-    summary,
+    summary: summarized.text,
     aiConfigured: !!process.env.OPENAI_API_KEY,
+    summaryModel: summarized.model,
+    summaryUsage: summarized.usage,
   };
 
   // Only cache a complete pull (don't pin a failed fetch).
@@ -98,11 +105,17 @@ const SUMMARY_PROMPT = `You are a calm, encouraging guide explaining the Bible t
 
 TONE: warm, grounded, hopeful — never preachy, never heavy theological jargon. 3-5 short, mobile-readable sentences. No greeting, no "today's passage is"; just the meaning. End with one quiet line of application or encouragement.`;
 
+interface SummaryResult {
+  text?: string;
+  model?: string;
+  usage?: { prompt_tokens?: number; completion_tokens?: number };
+}
+
 async function summarize(
   otLabel: string,
   ntLabel: string,
   chapters: ChapterText[]
-): Promise<string | undefined> {
+): Promise<SummaryResult> {
   const corpus = chapters
     .filter((c) => c.verses.length)
     .map((c) => `${c.ref}\n${c.verses.map((v) => `${v.verse} ${v.text}`).join(" ")}`)
@@ -112,17 +125,17 @@ async function summarize(
   const refs = [otLabel, ntLabel].filter(Boolean).join(" and ");
 
   if (!corpus.trim()) {
-    return undefined;
+    return {};
   }
 
   const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    return `Today you're reading ${refs}. Sit with it slowly — read it once for the story, once for the line that's meant for you. Let one verse stay with you through the day.`;
-  }
-
   // A calm, always-available fallback so the card is never blank if the model
-  // call fails or times out.
+  // call fails, times out, or no key is configured.
   const fallback = `Today you're reading ${refs}. Sit with it slowly — read it once for the story, once for the line that's meant for you. Let one verse stay with you through the day.`;
+
+  if (!apiKey) {
+    return { text: fallback };
+  }
 
   const model = process.env.OPENAI_MODEL || "gpt-5.4-mini";
   const ctrl = new AbortController();
@@ -144,13 +157,17 @@ async function summarize(
     });
     if (!res.ok) {
       console.error("[scripture] summary model error", res.status);
-      return fallback;
+      return { text: fallback };
     }
     const data = await res.json();
-    return data.choices?.[0]?.message?.content?.trim() || fallback;
+    return {
+      text: data.choices?.[0]?.message?.content?.trim() || fallback,
+      model,
+      usage: data.usage,
+    };
   } catch (err) {
     console.error("[scripture] summary failed", err);
-    return fallback;
+    return { text: fallback };
   } finally {
     clearTimeout(timer);
   }

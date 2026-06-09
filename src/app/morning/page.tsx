@@ -9,6 +9,7 @@ import { VoiceField } from "@/components/VoiceField";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { useStore } from "@/lib/store";
+import { askCoach } from "@/lib/ai-client";
 
 export default function MorningPage() {
   return (
@@ -41,15 +42,7 @@ function Morning() {
   const generateSummary = async () => {
     setSummarizing(true);
     try {
-      const res = await fetch("/api/coach", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          mode: "summary",
-          text: combined,
-        }),
-      });
-      const data = await res.json();
+      const data = await askCoach({ mode: "summary", text: combined }, "summary");
       setSummary(data.reply ?? "");
     } catch {
       setSummary(localSummary());

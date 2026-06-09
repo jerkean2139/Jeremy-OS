@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
+import { meterTranscribe } from "@/lib/ai-client";
 
 // Audio recording via MediaRecorder + server-side transcription (Whisper).
 // This is the reliable voice path for iOS PWAs, where the Web Speech API
@@ -39,6 +40,7 @@ export function useRecorder() {
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
+  const startedAtRef = useRef<number>(0);
 
   const start = useCallback(async (): Promise<boolean> => {
     if (!supported) return false;
@@ -54,6 +56,7 @@ export function useRecorder() {
       };
       mr.start();
       recorderRef.current = mr;
+      startedAtRef.current = Date.now();
       setRecording(true);
       return true;
     } catch {
@@ -104,6 +107,9 @@ export function useRecorder() {
         return null;
       }
       const json = await res.json().catch(() => ({}));
+      // Meter the transcription spend by recorded duration.
+      const seconds = startedAtRef.current ? (Date.now() - startedAtRef.current) / 1000 : 0;
+      if (json?.model && seconds) meterTranscribe(String(json.model), seconds);
       return (json?.text as string) || null;
     } catch {
       setError("Couldn't reach the transcription service.");

@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/Card";
 import { ScriptureExplainer } from "@/components/ScriptureExplainer";
 import { readingForDay } from "@/lib/bible";
 import { useStore } from "@/lib/store";
+import { meterChat } from "@/lib/ai-client";
 import type { ScriptureResponse, ChapterText } from "@/app/api/scripture/route";
 import { cn } from "@/lib/utils";
 
@@ -35,6 +36,9 @@ export function ScriptureReader({ day }: { day: number }) {
       .then((r) => r.json())
       .then((d: ScriptureResponse) => {
         if (alive) setData(d);
+        if (!d?.cached && d?.summaryModel && d.summaryUsage) {
+          meterChat("scripture", d.summaryModel, d.summaryUsage);
+        }
       })
       .catch(() => {})
       .finally(() => {

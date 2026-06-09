@@ -7,6 +7,7 @@ import { HydrationGate } from "@/components/HydrationGate";
 import { Button } from "@/components/ui/Button";
 import { useStore } from "@/lib/store";
 import { buildCoachContext } from "@/lib/coach-context";
+import { askCoach } from "@/lib/ai-client";
 import { cn } from "@/lib/utils";
 
 export default function CoachPage() {
@@ -77,17 +78,15 @@ function Coach() {
     }));
 
     try {
-      const res = await fetch("/api/coach", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      const data = await askCoach(
+        {
           mode: "chat",
           messages: priorMessages.slice(-10),
           context: buildContext(),
           memory: coachMemory,
-        }),
-      });
-      const data = await res.json();
+        },
+        "coach"
+      );
       addMessage({ role: "assistant", content: data.reply ?? "I'm here." });
     } catch {
       addMessage({
@@ -112,17 +111,15 @@ function Coach() {
     setLearning(true);
     setMemoryNote(null);
     try {
-      const res = await fetch("/api/coach", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      const data = await askCoach(
+        {
           mode: "memory",
           messages: history.slice(-12).map((m) => ({ role: m.role, content: m.content })),
           context: buildContext(),
           memory: coachMemory,
-        }),
-      });
-      const data = await res.json();
+        },
+        "memory"
+      );
       const lines = String(data.reply ?? "")
         .split("\n")
         .map((l) => l.replace(/^[-*•\d.\s]+/, "").trim())

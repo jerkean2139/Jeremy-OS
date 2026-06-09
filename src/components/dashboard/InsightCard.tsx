@@ -6,6 +6,7 @@ import { Lightbulb, Sparkles, ArrowRight } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { buildSeries, correlations, calcElevatorFreeStreak } from "@/lib/analytics";
 import { generateInsight, buildInsightContext, type InsightTone } from "@/lib/insights";
+import { askCoach } from "@/lib/ai-client";
 import { todayKey, cn } from "@/lib/utils";
 
 const TONE: Record<InsightTone, { ring: string; icon: string; chip: string; label: string }> = {
@@ -48,16 +49,14 @@ export function InsightCard() {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch("/api/coach", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
+        const data = await askCoach(
+          {
             mode: "insight",
             text: `${insight.headline}. ${insight.body} ${insight.action}`,
             context: insight.context,
-          }),
-        });
-        const data = await res.json();
+          },
+          "insight"
+        );
         const text = (data?.reply as string)?.trim();
         if (!cancelled && text) {
           setRefined(text);

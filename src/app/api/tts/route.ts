@@ -46,7 +46,13 @@ export async function POST(req: NextRequest) {
       const buf = await res.arrayBuffer();
       return new NextResponse(buf, {
         status: 200,
-        headers: { "Content-Type": "audio/mpeg", "Cache-Control": "no-store" },
+        headers: {
+          "Content-Type": "audio/mpeg",
+          "Cache-Control": "no-store",
+          // Surfaced so the client can meter estimated spend.
+          "X-Ai-Model": model,
+          "X-Ai-Chars": String(text.length),
+        },
       });
     } catch (err) {
       console.error("[tts] request failed", model, err);

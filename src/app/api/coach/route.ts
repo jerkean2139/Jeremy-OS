@@ -102,7 +102,7 @@ export async function POST(req: NextRequest) {
       }
       const data = await res.json();
       const reply = data.choices?.[0]?.message?.content?.trim() ?? localEngine(body);
-      return NextResponse.json({ reply, source: "openai" });
+      return NextResponse.json({ reply, source: "openai", model, usage: data.usage });
     } catch {
       return NextResponse.json({ reply: localEngine(body), source: "local-fallback" });
     }
@@ -176,7 +176,12 @@ export async function POST(req: NextRequest) {
     }
     const data = await res.json();
     const reply = data.choices?.[0]?.message?.content?.trim() ?? localEngine(body);
-    return NextResponse.json({ reply: appendCreed(body.mode, reply), source: "openai" });
+    return NextResponse.json({
+      reply: appendCreed(body.mode, reply),
+      source: "openai",
+      model,
+      usage: data.usage,
+    });
   } catch {
     return NextResponse.json({
       reply: appendCreed(body.mode, localEngine(body)),

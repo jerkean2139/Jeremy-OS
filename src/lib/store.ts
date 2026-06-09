@@ -16,6 +16,7 @@ import {
   type ReminderPrefs,
   type ScriptureProgress,
   type ScriptureBookmark,
+  type AiUsageEntry,
   type Habit,
   type HabitLaws,
   type HabitKind,
@@ -115,6 +116,8 @@ interface StoreActions {
   // Replace the whole document from a backup file (data export/restore).
   // Toggle a Slack item as handled/unhandled on your end (swipe to clear).
   toggleSlackDone: (id: string) => void;
+  // Record one metered AI call (estimated cost).
+  recordAiUsage: (entry: Omit<AiUsageEntry, "id" | "ts"> & { ts?: string }) => void;
   importState: (data: Partial<JeremyState>) => void;
 }
 
@@ -154,6 +157,7 @@ export const useStore = create<Store>()(
       keyHabitLaws: DEFAULT_KEY_HABIT_LAWS,
       scorecard: [],
       slackDone: [],
+      aiUsage: [],
       onboardedAt: null,
 
       _hydrated: false,
@@ -437,6 +441,17 @@ export const useStore = create<Store>()(
           };
         }),
 
+      recordAiUsage: (entry) =>
+        set((s) => {
+          const log = s.aiUsage ?? [];
+          const next = [
+            ...log,
+            { ...entry, id: uid(), ts: entry.ts ?? new Date().toISOString() },
+          ];
+          // Keep the log bounded — the totals are what matter.
+          return { aiUsage: next.length > 5000 ? next.slice(-5000) : next };
+        }),
+
       importState: (data) =>
         set((s) => ({
           identity: data.identity ?? s.identity,
@@ -473,6 +488,7 @@ export const useStore = create<Store>()(
         keyHabitLaws: s.keyHabitLaws,
         scorecard: s.scorecard,
         slackDone: s.slackDone,
+        aiUsage: s.aiUsage,
         onboardedAt: s.onboardedAt,
       }),
       onRehydrateStorage: () => (state) => {

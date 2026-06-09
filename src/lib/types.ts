@@ -258,6 +258,18 @@ export const DEFAULT_REMINDERS: ReminderPrefs = {
   habits: { enabled: false, time: "12:00" },
 };
 
+// One metered AI call — estimated cost plus the raw usage it came from.
+export interface AiUsageEntry {
+  id: string;
+  ts: string; // ISO timestamp
+  feature: string; // coach | scripture | summary | insight | review | memory | tts | transcribe
+  model: string;
+  cost: number; // estimated USD
+  inputTokens?: number;
+  outputTokens?: number;
+  units?: number; // chars (tts) or seconds (transcribe)
+}
+
 export interface JeremyState {
   identity: IdentityStatement;
   days: Record<string, DayEntry>;
@@ -279,6 +291,8 @@ export interface JeremyState {
   scorecard: ScorecardItem[];
   // Slack items you've swiped away as handled (keyed per message).
   slackDone?: string[];
+  // Estimated AI spend, one entry per OpenAI-backed call.
+  aiUsage?: AiUsageEntry[];
   // ISO timestamp of when first-run onboarding was completed; null until then.
   onboardedAt?: string | null;
 }
