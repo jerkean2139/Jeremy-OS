@@ -21,6 +21,7 @@ import { HydrationGate } from "@/components/HydrationGate";
 import { VoiceField } from "@/components/VoiceField";
 import { VoiceChat } from "@/components/VoiceChat";
 import { VoicePicker } from "@/components/VoicePicker";
+import { StretchIllustration } from "@/components/StretchIllustration";
 import { SlackBriefing } from "@/components/SlackBriefing";
 import { ScriptureReader } from "@/components/ScriptureReader";
 import { Card, CardContent } from "@/components/ui/Card";
@@ -268,7 +269,7 @@ function StretchStep({ onDone }: { onDone: (sec: number) => void }) {
 
       <Card>
         <CardContent className="flex flex-col items-center gap-3 py-10 text-center">
-          <Wind className="h-7 w-7 text-sage-400" />
+          <StretchIllustration illo={move.illo} />
           <div className="text-xl font-semibold text-mist-50">{move.name}</div>
           <p className="max-w-xs text-sm text-mist-400">{move.cue}</p>
           <div className="mt-2 text-5xl font-semibold tabular-nums text-sage-300">{fmtClock(left)}</div>

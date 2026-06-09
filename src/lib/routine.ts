@@ -5,19 +5,22 @@
 import { type DayEntry, type RoutineLog, type RoutinePart } from "./types";
 import { todayKey } from "./utils";
 
+export type StretchIllo = "neck" | "fold" | "squat" | "twist" | "reach";
+
 export interface StretchMove {
   name: string;
   cue: string;
   sec: number;
+  illo: StretchIllo; // which figure illustration to show
 }
 
 // A gentle 5-minute sequence (sums to 300s).
 export const STRETCH_SEQUENCE: StretchMove[] = [
-  { name: "Neck & shoulders", cue: "Slow rolls. Let the shoulders drop away from the ears.", sec: 60 },
-  { name: "Forward fold", cue: "Hinge at the hips. Let the spine hang heavy.", sec: 60 },
-  { name: "Hip opener", cue: "Low lunge — switch sides at the halfway mark.", sec: 75 },
-  { name: "Spinal twist", cue: "Easy rotation, one breath each direction.", sec: 60 },
-  { name: "Reach & breathe", cue: "Tall reach overhead. Three deep breaths.", sec: 45 },
+  { name: "Neck & shoulders", cue: "Slow rolls. Let the shoulders drop away from the ears.", sec: 60, illo: "neck" },
+  { name: "Forward fold", cue: "Hinge at the hips. Let the spine hang heavy.", sec: 60, illo: "fold" },
+  { name: "Bodyweight squats", cue: "Feet hip-width. Sit back into your hips — knees soft, tracking over your toes. Slow and easy.", sec: 75, illo: "squat" },
+  { name: "Spinal twist", cue: "Easy rotation, one breath each direction.", sec: 60, illo: "twist" },
+  { name: "Reach & breathe", cue: "Tall reach overhead. Three deep breaths.", sec: 45, illo: "reach" },
 ];
 
 export const STRETCH_TOTAL_SEC = STRETCH_SEQUENCE.reduce((s, m) => s + m.sec, 0);
