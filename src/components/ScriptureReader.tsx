@@ -28,17 +28,23 @@ export function ScriptureReader({ day }: { day: number }) {
     setData(null);
     setSel(null);
     setExplaining(false);
-    fetch(`/api/scripture?day=${day}`)
+    // Never spin forever: abort the request after 20s and fall back to labels.
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 20000);
+    fetch(`/api/scripture?day=${day}`, { signal: ctrl.signal })
       .then((r) => r.json())
       .then((d: ScriptureResponse) => {
         if (alive) setData(d);
       })
       .catch(() => {})
       .finally(() => {
+        clearTimeout(timer);
         if (alive) setLoading(false);
       });
     return () => {
       alive = false;
+      clearTimeout(timer);
+      ctrl.abort();
     };
   }, [day]);
 
