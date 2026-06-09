@@ -31,12 +31,24 @@ PERSISTENCE: when his reps are high but results feel flat, name the Plateau of L
 
 STYLE: short. Mobile-readable. 2-5 sentences unless asked for more. Speak to him as "you". End with awareness or one small action, not a lecture.`;
 
+// A separate persona for the "break down this scripture" conversation.
+const SCRIPTURE_EXPLAIN_PROMPT = `You explain Bible passages to a smart, busy adult who wants to genuinely understand them — not hear a sermon. You are given a specific passage; ground everything in it.
+
+HOW TO EXPLAIN:
+- Use plain, modern English at about a HIGH-SCHOOL reading level. No theological jargon; if a churchy word is unavoidable, define it in everyday terms.
+- Say what the passage literally says/depicts, then what it means.
+- When it genuinely helps understanding, give ONE everyday metaphor or analogy (modern, relatable) to make it click. Don't force one if it doesn't fit.
+- Keep it calm, concrete, and encouraging. 3-6 short, mobile-readable sentences.
+- No greeting, no "this passage is about"; just help him get it.
+- Answer follow-up questions in the same plain style, staying anchored to the passage. If asked something it doesn't cover, say so briefly and offer the closest honest read.`;
+
 interface Body {
-  mode?: "chat" | "summary" | "insight" | "memory" | "review";
+  mode?: "chat" | "summary" | "insight" | "memory" | "review" | "scripture";
   text?: string;
   messages?: { role: "user" | "assistant"; content: string }[];
   context?: string;
   memory?: string[];
+  passage?: string; // for "scripture" mode: the verses being discussed
 }
 
 // The coach signs off its one-shot "briefing" outputs (not live chat, not
@@ -67,6 +79,33 @@ export async function POST(req: NextRequest) {
       reply: appendCreed(body.mode, localEngine(body)),
       source: "local",
     });
+  }
+
+  // Scripture study uses its own persona + the passage as grounding context.
+  if (body.mode === "scripture") {
+    if (!apiKey) {
+      return NextResponse.json({ reply: localEngine(body), source: "local" });
+    }
+    try {
+      const messages: { role: string; content: string }[] = [
+        { role: "system", content: SCRIPTURE_EXPLAIN_PROMPT },
+        { role: "system", content: `The passage in front of him:\n${body.passage ?? ""}` },
+        ...(body.messages ?? []),
+      ];
+      const res = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+        body: JSON.stringify({ model, messages, temperature: 0.6, max_tokens: 450 }),
+      });
+      if (!res.ok) {
+        return NextResponse.json({ reply: localEngine(body), source: "local-fallback" });
+      }
+      const data = await res.json();
+      const reply = data.choices?.[0]?.message?.content?.trim() ?? localEngine(body);
+      return NextResponse.json({ reply, source: "openai" });
+    } catch {
+      return NextResponse.json({ reply: localEngine(body), source: "local-fallback" });
+    }
   }
 
   try {
@@ -162,6 +201,11 @@ function localEngine(body: Body): string {
   // Memory extraction needs the model; offline we don't invent facts.
   if (body.mode === "memory") {
     return "";
+  }
+
+  // Scripture study needs the model to read the passage; offline, point the way.
+  if (body.mode === "scripture") {
+    return "I can't read it closely while offline. Here's a way in for now: read it twice — once for what's happening, once for what it's asking of you. The core idea is usually simpler than the wording. Bring your question back when you're connected and I'll break it down fully.";
   }
 
   // Weekly review: offline, lean on the facts the engine already assembled.
