@@ -57,6 +57,14 @@ export function VoiceChat({
     }
   }, [speech.supported, recorder.supported]);
 
+  // If on-device dictation fails at runtime, fall back to record→transcribe.
+  useEffect(() => {
+    if (mode === "speech" && speech.error && recorder.supported) {
+      setMode("record");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [speech.error]);
+
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [turns, thinking]);
@@ -213,6 +221,9 @@ export function VoiceChat({
       </p>
       {recorder.error && mode === "record" && (
         <p className="mt-1 text-center text-[11px] text-ember-400">{recorder.error}</p>
+      )}
+      {speech.error && (
+        <p className="mt-1 text-center text-[11px] text-ember-400">{speech.error.message}</p>
       )}
     </div>
   );

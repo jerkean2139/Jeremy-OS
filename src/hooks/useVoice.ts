@@ -17,10 +17,29 @@ type SpeechRecognitionLike = {
   onend: (() => void) | null;
 };
 
+// Map raw Web Speech error codes to calm, useful copy.
+function friendlyError(code: string): string {
+  switch (code) {
+    case "not-allowed":
+    case "service-not-allowed":
+      return "Microphone access is blocked. Allow the mic, or just type.";
+    case "audio-capture":
+      return "No microphone found.";
+    case "network":
+      return "Live dictation isn’t reaching its service — switching to recording.";
+    case "no-speech":
+      return "Didn’t catch that — try again.";
+    default:
+      return "Voice hit a snag — switching to recording.";
+  }
+}
+
 export function useVoice() {
   const [supported, setSupported] = useState(false);
   const [listening, setListening] = useState(false);
   const [transcript, setTranscript] = useState("");
+  // The last runtime error code, so callers can fall back or show a message.
+  const [error, setError] = useState<{ code: string; message: string } | null>(null);
   const recRef = useRef<SpeechRecognitionLike | null>(null);
   const baseRef = useRef("");
 
@@ -46,13 +65,19 @@ export function useVoice() {
         setTranscript((baseRef.current + " " + interim).trim());
       };
       rec.onend = () => setListening(false);
-      rec.onerror = () => setListening(false);
+      rec.onerror = (e: any) => {
+        const code = String(e?.error ?? "unknown");
+        // "aborted" is just us calling stop() — not a real failure.
+        if (code !== "aborted") setError({ code, message: friendlyError(code) });
+        setListening(false);
+      };
       recRef.current = rec;
     }
   }, []);
 
   const start = useCallback(() => {
     if (!recRef.current) return;
+    setError(null);
     try {
       recRef.current.start();
       setListening(true);
@@ -76,5 +101,5 @@ export function useVoice() {
     setTranscript(t);
   }, []);
 
-  return { supported, listening, transcript, start, stop, reset, setText };
+  return { supported, listening, transcript, error, start, stop, reset, setText };
 }

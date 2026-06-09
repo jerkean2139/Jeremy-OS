@@ -55,6 +55,15 @@ export function VoiceField({ label, placeholder, value, onChange, rows = 3 }: Vo
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [speech.transcript, speech.listening, mode]);
 
+  // If on-device dictation fails (Chrome's network voice service, blocked mic,
+  // etc.), fall back to record→transcribe so the button still works.
+  useEffect(() => {
+    if (mode === "speech" && speech.error && recorder.supported) {
+      setMode("record");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [speech.error]);
+
   const toggleSpeech = () => {
     if (speech.listening) {
       speech.stop();
@@ -120,6 +129,9 @@ export function VoiceField({ label, placeholder, value, onChange, rows = 3 }: Vo
       />
       {recorder.error && mode === "record" && (
         <p className="mt-1.5 text-xs text-ember-400">{recorder.error}</p>
+      )}
+      {speech.error && (
+        <p className="mt-1.5 text-xs text-ember-400">{speech.error.message}</p>
       )}
     </div>
   );
