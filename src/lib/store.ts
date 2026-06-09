@@ -15,6 +15,7 @@ import {
   type PulseEntry,
   type ReminderPrefs,
   type ScriptureProgress,
+  type ScriptureBookmark,
   type Habit,
   type HabitLaws,
   type HabitKind,
@@ -71,6 +72,8 @@ interface StoreActions {
 
   // Bible reading plan: advance after a reading, or jump to a specific day.
   markScriptureRead: () => void;
+  addScriptureBookmark: (b: Omit<ScriptureBookmark, "id" | "createdAt">) => void;
+  removeScriptureBookmark: (id: string) => void;
   setScriptureDay: (day: number) => void;
 
   // Atomic Habits.
@@ -286,6 +289,7 @@ export const useStore = create<Store>()(
           const already = sc.readLog.some((r) => r.day === day);
           return {
             scripture: {
+              ...sc,
               currentDay: clampDay(day + 1),
               lastReadDate: date,
               readLog: already ? sc.readLog : [...sc.readLog, { date, day }],
@@ -297,6 +301,33 @@ export const useStore = create<Store>()(
         set((s) => ({
           scripture: { ...(s.scripture ?? DEFAULT_SCRIPTURE), currentDay: clampDay(day) },
         })),
+
+      addScriptureBookmark: (b) =>
+        set((s) => {
+          const sc = s.scripture ?? DEFAULT_SCRIPTURE;
+          const bookmarks = sc.bookmarks ?? [];
+          // Don't duplicate the exact same selection.
+          if (bookmarks.some((x) => x.ref === b.ref && x.verses.join() === b.verses.join())) {
+            return {};
+          }
+          return {
+            scripture: {
+              ...sc,
+              bookmarks: [
+                { ...b, id: uid(), createdAt: new Date().toISOString() },
+                ...bookmarks,
+              ],
+            },
+          };
+        }),
+
+      removeScriptureBookmark: (id) =>
+        set((s) => {
+          const sc = s.scripture ?? DEFAULT_SCRIPTURE;
+          return {
+            scripture: { ...sc, bookmarks: (sc.bookmarks ?? []).filter((b) => b.id !== id) },
+          };
+        }),
 
       addHabit: (input) =>
         set((s) => ({

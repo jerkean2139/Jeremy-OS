@@ -184,15 +184,27 @@ export interface ScorecardItem {
 
 // One-year Bible reading plan progress. Self-paced: `currentDay` is how far
 // you've read (1..365), not the calendar — no guilt, only forward motion.
+// A highlighted passage saved for study / conversation.
+export interface ScriptureBookmark {
+  id: string;
+  day: number; // plan-day it came from
+  ref: string; // e.g. "John 3"
+  verses: number[]; // selected verse numbers
+  text: string; // the selected verse text, joined
+  createdAt: string; // ISO
+}
+
 export interface ScriptureProgress {
   currentDay: number; // the active reading day, 1-based
   lastReadDate?: string; // YYYY-MM-DD of the most recent completion
   readLog: { date: string; day: number }[]; // each completed reading
+  bookmarks?: ScriptureBookmark[]; // highlighted passages
 }
 
 export const DEFAULT_SCRIPTURE: ScriptureProgress = {
   currentDay: 1,
   readLog: [],
+  bookmarks: [],
 };
 
 // Pulse = a 15-minute awareness check. "Am I on the Mountain or in the Noise?"

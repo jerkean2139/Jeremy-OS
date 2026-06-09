@@ -1,15 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import { Check, ChevronLeft, ChevronRight } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Bookmark, MessageSquareText, Trash2 } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { HydrationGate } from "@/components/HydrationGate";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { ScriptureReader } from "@/components/ScriptureReader";
+import { ScriptureExplainer } from "@/components/ScriptureExplainer";
 import { useStore } from "@/lib/store";
 import { clampDay, PLAN_DAYS } from "@/lib/bible";
 import { todayKey } from "@/lib/utils";
+import type { ScriptureBookmark } from "@/lib/types";
 
 export default function ScripturePage() {
   return (
@@ -22,9 +24,13 @@ export default function ScripturePage() {
 function Scripture() {
   const scripture = useStore((s) => s.scripture);
   const markRead = useStore((s) => s.markScriptureRead);
+  const removeBookmark = useStore((s) => s.removeScriptureBookmark);
 
   const currentDay = clampDay(scripture?.currentDay ?? 1);
   const [viewDay, setViewDay] = useState(currentDay);
+  const [discussing, setDiscussing] = useState<ScriptureBookmark | null>(null);
+
+  const bookmarks = scripture?.bookmarks ?? [];
 
   const readToday = scripture?.lastReadDate === todayKey();
   const completed = scripture?.readLog.length ?? 0;
@@ -116,6 +122,58 @@ function Scripture() {
           </Button>
         )}
       </div>
+
+      {/* Bookmarked passages */}
+      {bookmarks.length > 0 && (
+        <div className="mt-8">
+          <div className="mb-3 flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.16em] text-mist-500">
+            <Bookmark className="h-3.5 w-3.5 text-sage-400" /> Bookmarks
+          </div>
+          <div className="space-y-3">
+            {bookmarks.map((b) => (
+              <div key={b.id}>
+                <Card>
+                  <CardContent className="pt-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="text-sm font-medium text-mist-100">
+                          {b.ref}
+                          {b.verses.length ? ` · v${b.verses.join(", ")}` : ""}
+                        </div>
+                        <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-mist-500">
+                          {b.text}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => removeBookmark(b.id)}
+                        className="-mr-1 -mt-1 shrink-0 rounded-full p-1.5 text-mist-600 hover:bg-ink-800 hover:text-ember-400"
+                        aria-label="Remove bookmark"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                    <button
+                      onClick={() => setDiscussing(discussing?.id === b.id ? null : b)}
+                      className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-sky-500/15 px-3 py-2 text-xs font-medium text-sky-200 hover:bg-sky-500/25"
+                    >
+                      <MessageSquareText className="h-3.5 w-3.5" />
+                      {discussing?.id === b.id ? "Close" : "Break it down"}
+                    </button>
+                  </CardContent>
+                </Card>
+                {discussing?.id === b.id && (
+                  <div className="mt-3">
+                    <ScriptureExplainer
+                      passage={{ ref: b.ref, verses: b.verses, text: b.text }}
+                      onClose={() => setDiscussing(null)}
+                    />
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
