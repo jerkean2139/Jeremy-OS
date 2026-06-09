@@ -17,27 +17,44 @@ export async function POST(req: NextRequest) {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey || !text.trim()) return new NextResponse(null, { status: 204 });
 
-  try {
-    const res = await fetch("https://api.openai.com/v1/audio/speech", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: process.env.OPENAI_TTS_MODEL || "gpt-4o-mini-tts",
-        voice: process.env.OPENAI_TTS_VOICE || "sage",
-        input: text,
-        response_format: "mp3",
-      }),
-    });
-    if (!res.ok) return new NextResponse(null, { status: 204 });
-    const buf = await res.arrayBuffer();
-    return new NextResponse(buf, {
-      status: 200,
-      headers: { "Content-Type": "audio/mpeg", "Cache-Control": "no-store" },
-    });
-  } catch {
-    return new NextResponse(null, { status: 204 });
+  const voice = process.env.OPENAI_TTS_VOICE || "sage";
+  // Try the configured (newer) model first, then fall back to the widely
+  // available tts-1 — so a model-access gap can't silently drop us to the
+  // robotic browser voice.
+  const models = [process.env.OPENAI_TTS_MODEL || "gpt-4o-mini-tts", "tts-1"];
+  const tried = new Set<string>();
+
+  for (const model of models) {
+    if (tried.has(model)) continue;
+    tried.add(model);
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 15000);
+    try {
+      const res = await fetch("https://api.openai.com/v1/audio/speech", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({ model, voice, input: text, response_format: "mp3" }),
+        signal: ctrl.signal,
+      });
+      if (!res.ok) {
+        console.error("[tts] model error", model, res.status, await res.text().catch(() => ""));
+        continue; // try the next model
+      }
+      const buf = await res.arrayBuffer();
+      return new NextResponse(buf, {
+        status: 200,
+        headers: { "Content-Type": "audio/mpeg", "Cache-Control": "no-store" },
+      });
+    } catch (err) {
+      console.error("[tts] request failed", model, err);
+    } finally {
+      clearTimeout(timer);
+    }
   }
+
+  // Everything failed — let the client use its browser voice.
+  return new NextResponse(null, { status: 204 });
 }

@@ -24,16 +24,29 @@ export interface ScriptureResponse {
   ot: { label: string; chapters: ChapterText[] };
   nt: { label: string; chapters: ChapterText[] };
   summary?: string;
+  aiConfigured?: boolean; // whether the rich AI "what it means" is available
 }
 
 const cache = new Map<number, ScriptureResponse>();
 
+// fetch with a hard timeout so a slow/unreachable upstream can never hang the
+// whole request (which would leave the reader spinning forever).
+async function fetchWithTimeout(url: string, ms: number): Promise<Response> {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), ms);
+  try {
+    return await fetch(url, { cache: "no-store", signal: ctrl.signal });
+  } finally {
+    clearTimeout(t);
+  }
+}
+
 async function fetchChapter(c: ChapterRef): Promise<ChapterText> {
   const ref = `${c.book} ${c.chapter}`;
   try {
-    const res = await fetch(
+    const res = await fetchWithTimeout(
       `${BIBLE_API}/${encodeURIComponent(ref)}?translation=${TRANSLATION}`,
-      { cache: "no-store" }
+      8000
     );
     if (!res.ok) return { ref, verses: [], error: true };
     const data = await res.json();
@@ -71,6 +84,7 @@ export async function GET(req: NextRequest) {
     ot: { label: reading.ot.label, chapters: otChapters },
     nt: { label: reading.nt.label, chapters: ntChapters },
     summary,
+    aiConfigured: !!process.env.OPENAI_API_KEY,
   };
 
   // Only cache a complete pull (don't pin a failed fetch).
@@ -106,7 +120,13 @@ async function summarize(
     return `Today you're reading ${refs}. Sit with it slowly — read it once for the story, once for the line that's meant for you. Let one verse stay with you through the day.`;
   }
 
+  // A calm, always-available fallback so the card is never blank if the model
+  // call fails or times out.
+  const fallback = `Today you're reading ${refs}. Sit with it slowly — read it once for the story, once for the line that's meant for you. Let one verse stay with you through the day.`;
+
   const model = process.env.OPENAI_MODEL || "gpt-5.4-mini";
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 12000);
   try {
     const res = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
@@ -120,11 +140,18 @@ async function summarize(
         temperature: 0.6,
         max_tokens: 350,
       }),
+      signal: ctrl.signal,
     });
-    if (!res.ok) return undefined;
+    if (!res.ok) {
+      console.error("[scripture] summary model error", res.status);
+      return fallback;
+    }
     const data = await res.json();
-    return data.choices?.[0]?.message?.content?.trim() || undefined;
-  } catch {
-    return undefined;
+    return data.choices?.[0]?.message?.content?.trim() || fallback;
+  } catch (err) {
+    console.error("[scripture] summary failed", err);
+    return fallback;
+  } finally {
+    clearTimeout(timer);
   }
 }
