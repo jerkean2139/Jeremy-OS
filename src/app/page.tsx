@@ -16,6 +16,7 @@ import { ScriptureCard } from "@/components/dashboard/ScriptureCard";
 import { RitualMakeupCard } from "@/components/dashboard/RitualMakeupCard";
 import { CostMeterCard } from "@/components/dashboard/CostMeterCard";
 import { DayCard } from "@/components/dashboard/DayCard";
+import { MovementCard } from "@/components/dashboard/MovementCard";
 import { QuickAddFab } from "@/components/QuickAddFab";
 import { StatTile } from "@/components/StatTile";
 import { useStore } from "@/lib/store";
@@ -176,6 +177,9 @@ function Dashboard() {
           accent="text-sage-400"
         />
       </div>
+
+      {/* Accrued steps & miles — appears once you've logged movement */}
+      <MovementCard />
 
       {/* Pulse — 15-min awareness check */}
       <Link
