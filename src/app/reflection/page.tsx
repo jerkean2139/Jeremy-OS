@@ -6,6 +6,7 @@ import { Check, Moon } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { HydrationGate } from "@/components/HydrationGate";
 import { VoiceField } from "@/components/VoiceField";
+import { SupplementsCard } from "@/components/SupplementsCard";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { useStore } from "@/lib/store";
@@ -58,6 +59,9 @@ function Reflection() {
       />
 
       <div className="space-y-5">
+        {/* Nightly routine: supplements & meds */}
+        <SupplementsCard date={date} />
+
         <Card>
           <CardContent className="space-y-5 pt-5">
             <VoiceField
