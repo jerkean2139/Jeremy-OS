@@ -7,6 +7,8 @@
 // uses (with a graceful offline fallback). Single-user by design, like the
 // rest of Jeremy OS. Never throws: partial failures degrade to partial data.
 
+import { chatComplete } from "@/lib/openai";
+
 const SLACK_API = "https://slack.com/api";
 
 // Keep the fan-out bounded — this runs at 7am for one person, but we still
@@ -210,27 +212,15 @@ async function summarize(d: {
     }${m ? `, ${m} mention${m === 1 ? "" : "s"}` : ""}. Triage the people first, reply where it matters, then close Slack and climb.`;
   }
 
-  const model = process.env.OPENAI_MODEL || "gpt-5.4-mini";
-  try {
-    const res = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-      body: JSON.stringify({
-        model,
-        messages: [
-          { role: "system", content: DIGEST_PROMPT },
-          { role: "user", content: corpus },
-        ],
-        temperature: 0.5,
-        max_tokens: 300,
-      }),
-    });
-    if (!res.ok) return undefined;
-    const data = await res.json();
-    return data.choices?.[0]?.message?.content?.trim() || undefined;
-  } catch {
-    return undefined;
-  }
+  const result = await chatComplete({
+    messages: [
+      { role: "system", content: DIGEST_PROMPT },
+      { role: "user", content: corpus },
+    ],
+    temperature: 0.5,
+    max_tokens: 300,
+  });
+  return result.ok ? result.content : undefined;
 }
 
 // --- Cowork briefs: pull recent messages from one designated Slack channel ---

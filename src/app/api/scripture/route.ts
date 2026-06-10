@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { readingForDay, type ChapterRef } from "@/lib/bible";
+import { chatComplete } from "@/lib/openai";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -137,38 +138,18 @@ async function summarize(
     return { text: fallback };
   }
 
-  const model = process.env.OPENAI_MODEL || "gpt-5.4-mini";
-  const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), 12000);
-  try {
-    const res = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-      body: JSON.stringify({
-        model,
-        messages: [
-          { role: "system", content: SUMMARY_PROMPT },
-          { role: "user", content: `Passage (${refs}):\n\n${corpus}` },
-        ],
-        temperature: 0.6,
-        max_tokens: 350,
-      }),
-      signal: ctrl.signal,
-    });
-    if (!res.ok) {
-      console.error("[scripture] summary model error", res.status);
-      return { text: fallback };
-    }
-    const data = await res.json();
-    return {
-      text: data.choices?.[0]?.message?.content?.trim() || fallback,
-      model,
-      usage: data.usage,
-    };
-  } catch (err) {
-    console.error("[scripture] summary failed", err);
+  const result = await chatComplete({
+    messages: [
+      { role: "system", content: SUMMARY_PROMPT },
+      { role: "user", content: `Passage (${refs}):\n\n${corpus}` },
+    ],
+    temperature: 0.6,
+    max_tokens: 350,
+  });
+
+  if (!result.ok || !result.content) {
+    console.error("[scripture] summary unavailable", result.error);
     return { text: fallback };
-  } finally {
-    clearTimeout(timer);
   }
+  return { text: result.content, model: result.model, usage: result.usage };
 }

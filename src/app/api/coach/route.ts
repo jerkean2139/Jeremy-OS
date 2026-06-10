@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { PERSONAL_CREED } from "@/lib/codewords";
+import { chatComplete } from "@/lib/openai";
 
 export const runtime = "nodejs";
 
@@ -71,7 +72,6 @@ export async function POST(req: NextRequest) {
   }
 
   const apiKey = process.env.OPENAI_API_KEY;
-  const model = process.env.OPENAI_MODEL || "gpt-5.4-mini";
 
   // --- Local fallback (no API key configured) ---
   if (!apiKey) {
@@ -86,26 +86,21 @@ export async function POST(req: NextRequest) {
     if (!apiKey) {
       return NextResponse.json({ reply: localEngine(body), source: "local" });
     }
-    try {
-      const messages: { role: string; content: string }[] = [
-        { role: "system", content: SCRIPTURE_EXPLAIN_PROMPT },
-        { role: "system", content: `The passage in front of him:\n${body.passage ?? ""}` },
-        ...(body.messages ?? []),
-      ];
-      const res = await fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-        body: JSON.stringify({ model, messages, temperature: 0.6, max_tokens: 450 }),
-      });
-      if (!res.ok) {
-        return NextResponse.json({ reply: localEngine(body), source: "local-fallback" });
-      }
-      const data = await res.json();
-      const reply = data.choices?.[0]?.message?.content?.trim() ?? localEngine(body);
-      return NextResponse.json({ reply, source: "openai", model, usage: data.usage });
-    } catch {
+    const messages: { role: string; content: string }[] = [
+      { role: "system", content: SCRIPTURE_EXPLAIN_PROMPT },
+      { role: "system", content: `The passage in front of him:\n${body.passage ?? ""}` },
+      ...(body.messages ?? []),
+    ];
+    const result = await chatComplete({ messages, temperature: 0.6, max_tokens: 450 });
+    if (!result.ok || !result.content) {
       return NextResponse.json({ reply: localEngine(body), source: "local-fallback" });
     }
+    return NextResponse.json({
+      reply: result.content,
+      source: "openai",
+      model: result.model,
+      usage: result.usage,
+    });
   }
 
   try {
@@ -154,33 +149,19 @@ export async function POST(req: NextRequest) {
       messages.push({ role: "user", content: body.text });
     }
 
-    const res = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model,
-        messages,
-        temperature: 0.7,
-        max_tokens: 400,
-      }),
-    });
+    const result = await chatComplete({ messages, temperature: 0.7, max_tokens: 400 });
 
-    if (!res.ok) {
+    if (!result.ok || !result.content) {
       return NextResponse.json({
         reply: appendCreed(body.mode, localEngine(body)),
         source: "local-fallback",
       });
     }
-    const data = await res.json();
-    const reply = data.choices?.[0]?.message?.content?.trim() ?? localEngine(body);
     return NextResponse.json({
-      reply: appendCreed(body.mode, reply),
+      reply: appendCreed(body.mode, result.content),
       source: "openai",
-      model,
-      usage: data.usage,
+      model: result.model,
+      usage: result.usage,
     });
   } catch {
     return NextResponse.json({
