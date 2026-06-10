@@ -119,6 +119,10 @@ interface StoreActions {
   toggleSlackDone: (id: string) => void;
   // The personal Calendar (.ics) feed URL, set in-app.
   setCalendarIcsUrl: (url: string) => void;
+  // The Slack channel carrying Cowork briefs, set in-app.
+  setCoworkChannel: (channel: string) => void;
+  // Toggle a Cowork brief as handled/unhandled (swipe to clear).
+  toggleCoworkDone: (id: string) => void;
   // Upsert a 1/10 feeling rating for a calendar event.
   rateEvent: (r: Omit<EventRating, "ratedAt">) => void;
   // Record one metered AI call (estimated cost).
@@ -448,6 +452,14 @@ export const useStore = create<Store>()(
 
       setCalendarIcsUrl: (url) => set({ calendarIcsUrl: url.trim() || undefined }),
 
+      setCoworkChannel: (channel) => set({ coworkChannel: channel.trim() || undefined }),
+
+      toggleCoworkDone: (id) =>
+        set((s) => {
+          const done = s.coworkDone ?? [];
+          return { coworkDone: done.includes(id) ? done.filter((x) => x !== id) : [...done, id] };
+        }),
+
       rateEvent: (r) =>
         set((s) => {
           const list = s.eventRatings ?? [];
@@ -509,6 +521,8 @@ export const useStore = create<Store>()(
         scorecard: s.scorecard,
         slackDone: s.slackDone,
         calendarIcsUrl: s.calendarIcsUrl,
+        coworkChannel: s.coworkChannel,
+        coworkDone: s.coworkDone,
         eventRatings: s.eventRatings,
         aiUsage: s.aiUsage,
         onboardedAt: s.onboardedAt,

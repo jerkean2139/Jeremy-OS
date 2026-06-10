@@ -23,6 +23,7 @@ import { VoiceChat } from "@/components/VoiceChat";
 import { VoicePicker } from "@/components/VoicePicker";
 import { StretchIllustration } from "@/components/StretchIllustration";
 import { SlackBriefing } from "@/components/SlackBriefing";
+import { CoworkBriefs } from "@/components/CoworkBriefs";
 import { ScriptureReader } from "@/components/ScriptureReader";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -557,7 +558,10 @@ function CompleteStep({
         <div className="mb-2 px-1 text-[11px] font-medium uppercase tracking-[0.16em] text-mist-500">
           Start here
         </div>
-        <SlackBriefing />
+        <div className="space-y-3">
+          <CoworkBriefs suppressSetup />
+          <SlackBriefing />
+        </div>
       </div>
 
       <Button size="lg" className="w-full" onClick={onDone}>

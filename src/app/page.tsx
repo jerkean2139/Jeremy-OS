@@ -12,6 +12,7 @@ import { PressureCard } from "@/components/dashboard/PressureCard";
 import { VitalsCard } from "@/components/dashboard/VitalsCard";
 import { InsightCard } from "@/components/dashboard/InsightCard";
 import { SlackBriefing } from "@/components/SlackBriefing";
+import { CoworkBriefs } from "@/components/CoworkBriefs";
 import { ScriptureCard } from "@/components/dashboard/ScriptureCard";
 import { RitualMakeupCard } from "@/components/dashboard/RitualMakeupCard";
 import { CostMeterCard } from "@/components/dashboard/CostMeterCard";
@@ -139,6 +140,9 @@ function Dashboard() {
 
       {/* Daily Word — scripture before the noise */}
       <ScriptureCard />
+
+      {/* Cowork briefs — scheduled-task results, scanned first at 7am */}
+      <CoworkBriefs />
 
       {/* Slack — the 7am "start here" briefing */}
       <SlackBriefing />
