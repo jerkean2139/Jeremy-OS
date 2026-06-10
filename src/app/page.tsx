@@ -16,6 +16,7 @@ import { ScriptureCard } from "@/components/dashboard/ScriptureCard";
 import { RitualMakeupCard } from "@/components/dashboard/RitualMakeupCard";
 import { CostMeterCard } from "@/components/dashboard/CostMeterCard";
 import { DayCard } from "@/components/dashboard/DayCard";
+import { QuickAddFab } from "@/components/QuickAddFab";
 import { StatTile } from "@/components/StatTile";
 import { useStore } from "@/lib/store";
 import { MISSION_STATEMENT, PERSONAL_CREED } from "@/lib/codewords";
@@ -279,6 +280,9 @@ function Dashboard() {
         Current pressure is{" "}
         <span className={pressureColor(day.pressureLevel)}>{day.pressureLevel}/10</span>
       </div>
+
+      {/* Quick-add a session, one tap */}
+      <QuickAddFab />
     </div>
   );
 }

@@ -13,15 +13,17 @@ function getVoices(): SpeechSynthesisVoice[] {
 
 // Text-to-speech with a premium-first, offline-safe strategy:
 //   1. Try /api/tts (natural OpenAI voice) — returns audio when a key is set.
-//   2. Fall back to the browser's speechSynthesis when no audio comes back,
-//      choosing the most natural installed voice instead of the OS default.
+//   2. Fall back to the browser's speechSynthesis, choosing the most natural
+//      installed voice instead of the OS default.
+// `speakChunks` plays an ordered list end-to-end (for long readings).
 // Must be triggered by a user gesture on mobile (the ritual is tap-driven).
 export function useSpeech() {
   const [speaking, setSpeaking] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const urlRef = useRef<string | null>(null);
+  // Bumped on cancel/new run so any in-flight sequence knows to stop.
+  const runRef = useRef(0);
 
-  // Prime the voice list as early as possible (some browsers populate late).
   useEffect(() => {
     if (typeof window === "undefined" || !window.speechSynthesis) return;
     getVoices();
@@ -42,6 +44,7 @@ export function useSpeech() {
   }, []);
 
   const cancel = useCallback(() => {
+    runRef.current++; // invalidate any running sequence
     cleanupAudio();
     if (typeof window !== "undefined" && window.speechSynthesis) {
       window.speechSynthesis.cancel();
@@ -49,30 +52,29 @@ export function useSpeech() {
     setSpeaking(false);
   }, [cleanupAudio]);
 
-  const fallback = useCallback((text: string) => {
-    if (typeof window === "undefined" || !window.speechSynthesis) {
-      setSpeaking(false);
-      return;
-    }
-    const u = new SpeechSynthesisUtterance(text);
-    const voice = pickBestVoice(getVoices(), loadVoicePreference());
-    if (voice) {
-      u.voice = voice;
-      u.lang = voice.lang;
-    }
-    u.rate = 0.96; // a touch slower — calm mentor, not a news anchor
-    u.pitch = 1;
-    u.onend = () => setSpeaking(false);
-    u.onerror = () => setSpeaking(false);
-    window.speechSynthesis.speak(u);
+  // Speak one chunk via the browser voice; resolves when done.
+  const browserSpeak = useCallback((text: string): Promise<void> => {
+    return new Promise((resolve) => {
+      if (typeof window === "undefined" || !window.speechSynthesis) return resolve();
+      const u = new SpeechSynthesisUtterance(text);
+      const voice = pickBestVoice(getVoices(), loadVoicePreference());
+      if (voice) {
+        u.voice = voice;
+        u.lang = voice.lang;
+      }
+      u.rate = 0.96; // a touch slower — calm mentor, not a news anchor
+      u.pitch = 1;
+      u.onend = () => resolve();
+      u.onerror = () => resolve();
+      window.speechSynthesis.speak(u);
+    });
   }, []);
 
-  const speak = useCallback(
-    async (text: string) => {
+  // Speak one chunk premium-first, browser-fallback; resolves when done.
+  const playText = useCallback(
+    async (text: string): Promise<void> => {
       const t = (text ?? "").trim();
       if (!t) return;
-      cancel();
-      setSpeaking(true);
       try {
         const res = await fetch("/api/tts", {
           method: "POST",
@@ -81,7 +83,6 @@ export function useSpeech() {
         });
         const type = res.headers.get("content-type") || "";
         if (res.ok && type.includes("audio")) {
-          // Meter the premium voice spend (headers set by /api/tts).
           const model = res.headers.get("x-ai-model");
           const chars = Number(res.headers.get("x-ai-chars") || 0);
           if (model && chars) meterTts(model, chars);
@@ -90,27 +91,58 @@ export function useSpeech() {
           urlRef.current = url;
           const audio = new Audio(url);
           audioRef.current = audio;
-          audio.onended = () => {
-            setSpeaking(false);
-            cleanupAudio();
-          };
-          audio.onerror = () => {
-            setSpeaking(false);
-            cleanupAudio();
-            fallback(t);
-          };
-          await audio.play();
+          await new Promise<void>((resolve) => {
+            audio.onended = () => {
+              cleanupAudio();
+              resolve();
+            };
+            audio.onerror = () => {
+              cleanupAudio();
+              browserSpeak(t).then(resolve);
+            };
+            audio.play().catch(() => browserSpeak(t).then(resolve));
+          });
           return;
         }
       } catch {
         /* fall through to browser voice */
       }
-      fallback(t);
+      await browserSpeak(t);
     },
-    [cancel, cleanupAudio, fallback]
+    [cleanupAudio, browserSpeak]
+  );
+
+  const speak = useCallback(
+    async (text: string) => {
+      const t = (text ?? "").trim();
+      if (!t) return;
+      cancel();
+      const run = ++runRef.current;
+      setSpeaking(true);
+      await playText(t);
+      if (runRef.current === run) setSpeaking(false);
+    },
+    [cancel, playText]
+  );
+
+  // Play an ordered list of chunks end-to-end (long readings).
+  const speakChunks = useCallback(
+    async (chunks: string[]) => {
+      const list = chunks.map((c) => c.trim()).filter(Boolean);
+      if (!list.length) return;
+      cancel();
+      const run = ++runRef.current;
+      setSpeaking(true);
+      for (const chunk of list) {
+        if (runRef.current !== run) return; // cancelled mid-sequence
+        await playText(chunk);
+      }
+      if (runRef.current === run) setSpeaking(false);
+    },
+    [cancel, playText]
   );
 
   useEffect(() => () => cancel(), [cancel]);
 
-  return { speak, cancel, speaking };
+  return { speak, speakChunks, cancel, speaking };
 }
