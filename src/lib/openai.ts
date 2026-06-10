@@ -59,3 +59,56 @@ export async function chatComplete(opts: ChatOpts): Promise<ChatResult> {
   }
   return { ok: false, error: "all_failed" };
 }
+
+export interface AiStatus {
+  configured: boolean; // OPENAI_API_KEY present
+  ok: boolean; // a usable chat model is reachable
+  keyValid?: boolean;
+  preferred: string; // the model OPENAI_MODEL asks for
+  model?: string; // the model that will actually be used
+  preferredAvailable?: boolean;
+  voice: boolean; // premium TTS available (key present)
+  error?: "invalid_key" | "no_model" | "network" | "insufficient_quota" | string;
+}
+
+// A cheap, no-token health check: validates the key and which chat model is
+// actually reachable via GET /v1/models, so the UI can say exactly what's wrong
+// (missing key vs. rejected key vs. model not on this account).
+export async function diagnoseOpenAI(): Promise<AiStatus> {
+  const apiKey = process.env.OPENAI_API_KEY;
+  const preferred = process.env.OPENAI_MODEL || "gpt-4o-mini";
+  const voice = !!apiKey;
+
+  if (!apiKey) return { configured: false, ok: false, preferred, voice: false };
+
+  try {
+    const res = await fetch("https://api.openai.com/v1/models", {
+      headers: { Authorization: `Bearer ${apiKey}` },
+      cache: "no-store",
+    });
+    if (res.status === 401) {
+      return { configured: true, ok: false, keyValid: false, preferred, voice, error: "invalid_key" };
+    }
+    if (res.status === 429) {
+      return { configured: true, ok: false, keyValid: true, preferred, voice, error: "insufficient_quota" };
+    }
+    if (!res.ok) {
+      return { configured: true, ok: false, keyValid: true, preferred, voice, error: `http_${res.status}` };
+    }
+    const data = await res.json();
+    const ids = new Set<string>((data.data || []).map((m: { id: string }) => m.id));
+    const usable = chatModelChain().find((m) => ids.has(m));
+    return {
+      configured: true,
+      ok: !!usable,
+      keyValid: true,
+      preferred,
+      model: usable,
+      preferredAvailable: ids.has(preferred),
+      voice,
+      error: usable ? undefined : "no_model",
+    };
+  } catch {
+    return { configured: true, ok: false, preferred, voice, error: "network" };
+  }
+}
