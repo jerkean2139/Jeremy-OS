@@ -15,6 +15,7 @@ import { SlackBriefing } from "@/components/SlackBriefing";
 import { ScriptureCard } from "@/components/dashboard/ScriptureCard";
 import { RitualMakeupCard } from "@/components/dashboard/RitualMakeupCard";
 import { CostMeterCard } from "@/components/dashboard/CostMeterCard";
+import { DayCard } from "@/components/dashboard/DayCard";
 import { StatTile } from "@/components/StatTile";
 import { useStore } from "@/lib/store";
 import { MISSION_STATEMENT, PERSONAL_CREED } from "@/lib/codewords";
@@ -130,6 +131,9 @@ function Dashboard() {
 
       {/* Make up a movement piece set aside this morning (e.g. a walk at lunch) */}
       <RitualMakeupCard />
+
+      {/* Today's calendar — appears once a calendar is connected */}
+      <DayCard />
 
       {/* Daily Word — scripture before the noise */}
       <ScriptureCard />

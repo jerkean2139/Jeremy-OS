@@ -291,6 +291,8 @@ export interface JeremyState {
   scorecard: ScorecardItem[];
   // Slack items you've swiped away as handled (keyed per message).
   slackDone?: string[];
+  // Personal secret-address (.ics) Calendar feed URL, when set in-app.
+  calendarIcsUrl?: string;
   // Estimated AI spend, one entry per OpenAI-backed call.
   aiUsage?: AiUsageEntry[];
   // ISO timestamp of when first-run onboarding was completed; null until then.
