@@ -2,6 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 
 export const runtime = "nodejs";
 
+// GET /api/tts — lightweight status so the UI can tell you whether the premium
+// AI voice is actually available (i.e. whether OPENAI_API_KEY is configured).
+export async function GET() {
+  return NextResponse.json({
+    configured: !!process.env.OPENAI_API_KEY,
+    voice: process.env.OPENAI_TTS_VOICE || "sage",
+    model: process.env.OPENAI_TTS_MODEL || "gpt-4o-mini-tts",
+  });
+}
+
 // Premium text-to-speech for the morning ritual's voice coach. Uses OpenAI's
 // natural voice when OPENAI_API_KEY is set; returns 204 No Content otherwise so
 // the client falls back to the browser's built-in speechSynthesis (offline-safe).
