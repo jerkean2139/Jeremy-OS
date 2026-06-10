@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { TrendingUp, Info, CalendarRange, ChevronRight } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
+import { EnergyPatterns } from "@/components/EnergyPatterns";
 import { HydrationGate } from "@/components/HydrationGate";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { TrendChart } from "@/components/charts/TrendChart";
@@ -33,11 +34,12 @@ function Analytics() {
   const pulseLogs = useStore((s) => s.pulseLogs);
   const habits = useStore((s) => s.habits);
   const scripture = useStore((s) => s.scripture);
+  const eventRatings = useStore((s) => s.eventRatings);
   const [rangeDays, setRangeDays] = useState(7);
 
   const series = useMemo(
-    () => buildSeries(days, elevatorLogs, theaterLogs, pulseLogs, rangeDays),
-    [days, elevatorLogs, theaterLogs, pulseLogs, rangeDays]
+    () => buildSeries(days, elevatorLogs, theaterLogs, pulseLogs, rangeDays, new Date(), eventRatings ?? []),
+    [days, elevatorLogs, theaterLogs, pulseLogs, rangeDays, eventRatings]
   );
   const cors = useMemo(() => correlations(series), [series]);
 
@@ -58,6 +60,7 @@ function Analytics() {
   const hasData =
     hasVotes ||
     hasBuildHabits ||
+    (eventRatings?.length ?? 0) > 0 ||
     series.some(
       (p) =>
         p.pressure != null ||
@@ -126,6 +129,9 @@ function Analytics() {
         </Card>
       ) : (
         <div className="space-y-5">
+          {/* What energizes vs drains you (from calendar debriefs) */}
+          <EnergyPatterns />
+
           {/* Insights */}
           {cors.length > 0 && (
             <Card>
