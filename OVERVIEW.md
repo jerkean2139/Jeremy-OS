@@ -50,7 +50,7 @@ awareness.
   works offline.
 - **Single-user by design** — it's yours. Data lives instantly on-device and
   syncs to a private **Postgres** database, deployed on **Railway**.
-- **Optional AI** via OpenAI (currently `gpt-5.4-mini`), with a built-in offline
+- **Optional AI** via OpenAI (currently `gpt-4o-mini`), with a built-in offline
   coaching engine so it always works.
 
 ## The point

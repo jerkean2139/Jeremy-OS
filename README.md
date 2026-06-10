@@ -76,7 +76,7 @@ APP_PASSCODE=your-passcode
 
 # AI Recovery Coach + summaries (server-side)
 OPENAI_API_KEY=sk-...
-OPENAI_MODEL=gpt-5.4-mini
+OPENAI_MODEL=gpt-4o-mini
 
 # Cloud sync via Postgres (server-side). Provided automatically on Railway.
 DATABASE_URL=postgresql://...

@@ -77,7 +77,7 @@ A deliberate single-user design: **one row, last-write-wins.**
 
 - `src/app/api/coach/route.ts` powers both the chat coach and the morning-summary generation.
 - A fixed `SYSTEM_PROMPT` defines the coach: a calm "coach, mirror, strategic advisor, and pattern detector" — explicitly **not a therapist**, never diagnosing, no guilt or shame. It understands the code words and keeps replies short and mobile-readable.
-- When `OPENAI_API_KEY` is set, it calls the OpenAI chat completions API (`OPENAI_MODEL`, default `gpt-5.4-mini`, `temperature 0.7`, `max_tokens 400`).
+- When `OPENAI_API_KEY` is set, it calls the OpenAI chat completions API (`OPENAI_MODEL`, default `gpt-4o-mini`, `temperature 0.7`, `max_tokens 400`).
 - When the key is **absent or the call fails**, a rule-based `localEngine()` returns mentor-style replies keyed off the user's text. The feature always works, online or off. The response reports its `source` (`openai | local | local-fallback`).
 - Context for the coach is built client-side in `coach/page.tsx` from `buildSeries` + `correlations` + the Elevator-free streak (last 14 days), so the AI reasons over real recent data.
 
