@@ -116,6 +116,8 @@ interface StoreActions {
   // Replace the whole document from a backup file (data export/restore).
   // Toggle a Slack item as handled/unhandled on your end (swipe to clear).
   toggleSlackDone: (id: string) => void;
+  // The personal Calendar (.ics) feed URL, set in-app.
+  setCalendarIcsUrl: (url: string) => void;
   // Record one metered AI call (estimated cost).
   recordAiUsage: (entry: Omit<AiUsageEntry, "id" | "ts"> & { ts?: string }) => void;
   importState: (data: Partial<JeremyState>) => void;
@@ -441,6 +443,8 @@ export const useStore = create<Store>()(
           };
         }),
 
+      setCalendarIcsUrl: (url) => set({ calendarIcsUrl: url.trim() || undefined }),
+
       recordAiUsage: (entry) =>
         set((s) => {
           const log = s.aiUsage ?? [];
@@ -488,6 +492,7 @@ export const useStore = create<Store>()(
         keyHabitLaws: s.keyHabitLaws,
         scorecard: s.scorecard,
         slackDone: s.slackDone,
+        calendarIcsUrl: s.calendarIcsUrl,
         aiUsage: s.aiUsage,
         onboardedAt: s.onboardedAt,
       }),
