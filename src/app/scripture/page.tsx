@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Check, ChevronLeft, ChevronRight, Bookmark, MessageSquareText, Trash2 } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
+import { AiStatusLine } from "@/components/AiStatusLine";
 import { HydrationGate } from "@/components/HydrationGate";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -46,6 +47,9 @@ function Scripture() {
   return (
     <div>
       <PageHeader title="Daily Word" subtitle="Reading the whole Bible in a year" back="/" />
+
+      {/* Only speaks up if the AI reflection can't run */}
+      <AiStatusLine className="mb-4" hideWhenOk />
 
       {/* Progress */}
       <Card className="mb-5">

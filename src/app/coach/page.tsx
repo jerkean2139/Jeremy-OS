@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Send, Sparkles, Trash2, Brain, Plus, X, Wand2 } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
+import { AiStatusLine } from "@/components/AiStatusLine";
 import { HydrationGate } from "@/components/HydrationGate";
 import { Button } from "@/components/ui/Button";
 import { useStore } from "@/lib/store";
@@ -171,6 +172,8 @@ function Coach() {
           )}
         </div>
       </div>
+
+      <AiStatusLine className="mb-3" />
 
       {memoryOpen && (
         <div className="mb-3 rounded-2xl border border-ink-700/60 bg-ink-850/70 p-4">
