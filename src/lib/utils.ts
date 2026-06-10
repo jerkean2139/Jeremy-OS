@@ -37,3 +37,28 @@ export function greeting(d: Date = new Date()): string {
   if (h < 18) return "Good afternoon";
   return "Good evening";
 }
+
+// Split long text into speakable chunks (≤ maxLen), breaking on sentence
+// boundaries where possible so the audio sounds natural and never truncates.
+export function chunkText(text: string, maxLen = 500): string[] {
+  const clean = text.replace(/\s+/g, " ").trim();
+  if (clean.length <= maxLen) return clean ? [clean] : [];
+  const sentences = clean.match(/[^.!?]+[.!?]+|\S+$/g) ?? [clean];
+  const chunks: string[] = [];
+  let cur = "";
+  for (const s of sentences) {
+    if ((cur + " " + s).trim().length > maxLen && cur) {
+      chunks.push(cur.trim());
+      cur = s;
+    } else {
+      cur = (cur + " " + s).trim();
+    }
+    // A single sentence longer than maxLen: hard-split it.
+    while (cur.length > maxLen) {
+      chunks.push(cur.slice(0, maxLen).trim());
+      cur = cur.slice(maxLen);
+    }
+  }
+  if (cur.trim()) chunks.push(cur.trim());
+  return chunks;
+}

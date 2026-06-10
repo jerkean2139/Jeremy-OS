@@ -1,14 +1,35 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { BookOpen, Sparkles, Loader2, MessageSquareText, Bookmark, X } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { BookOpen, Sparkles, Loader2, MessageSquareText, Bookmark, X, Headphones, Square } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/Card";
 import { ScriptureExplainer } from "@/components/ScriptureExplainer";
 import { readingForDay } from "@/lib/bible";
 import { useStore } from "@/lib/store";
 import { meterChat } from "@/lib/ai-client";
+import { useSpeech } from "@/hooks/useSpeech";
 import type { ScriptureResponse, ChapterText } from "@/app/api/scripture/route";
-import { cn } from "@/lib/utils";
+import { cn, chunkText } from "@/lib/utils";
+
+// Build an ordered list of spoken chunks for the whole reading — summary, then
+// each passage announced and read aloud — so it never truncates while walking.
+function buildListenChunks(data: ScriptureResponse | null): string[] {
+  if (!data) return [];
+  const chunks: string[] = [];
+  if (data.summary) chunks.push(...chunkText(`Here's what it means. ${data.summary}`));
+  for (const [heading, passage] of [
+    ["Old Testament", data.ot],
+    ["New Testament", data.nt],
+  ] as const) {
+    if (!passage?.label) continue;
+    chunks.push(`${heading}. ${passage.label}.`);
+    for (const c of passage.chapters ?? []) {
+      if (!c.verses?.length) continue;
+      chunks.push(...chunkText(c.verses.map((v) => v.text).join(" ")));
+    }
+  }
+  return chunks;
+}
 
 type Sel = { ref: string; verses: number[]; texts: Record<number, string> };
 
@@ -22,6 +43,8 @@ export function ScriptureReader({ day }: { day: number }) {
   const [sel, setSel] = useState<Sel | null>(null);
   const [explaining, setExplaining] = useState(false);
   const addBookmark = useStore((s) => s.addScriptureBookmark);
+  const { speakChunks, cancel: cancelSpeech, speaking } = useSpeech();
+  const listenChunks = useMemo(() => buildListenChunks(data), [data]);
 
   useEffect(() => {
     let alive = true;
@@ -103,6 +126,29 @@ export function ScriptureReader({ day }: { day: number }) {
           )}
         </CardContent>
       </Card>
+
+      {/* Listen — hands-free for a walk */}
+      {!loading && listenChunks.length > 0 && (
+        <button
+          onClick={() => (speaking ? cancelSpeech() : speakChunks(listenChunks))}
+          className={cn(
+            "mb-5 flex w-full items-center justify-center gap-2 rounded-2xl border py-3 text-sm font-medium transition-colors",
+            speaking
+              ? "border-ember-500/30 bg-ember-500/10 text-ember-200"
+              : "border-sky-500/30 bg-sky-500/10 text-sky-300 hover:bg-sky-500/15"
+          )}
+        >
+          {speaking ? (
+            <>
+              <Square className="h-4 w-4" /> Stop listening
+            </>
+          ) : (
+            <>
+              <Headphones className="h-4 w-4" /> Listen to today&apos;s reading
+            </>
+          )}
+        </button>
+      )}
 
       <Passage
         heading="Old Testament"
