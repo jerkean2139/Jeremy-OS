@@ -28,6 +28,7 @@ import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { useStore } from "@/lib/store";
 import { useSpeech } from "@/hooks/useSpeech";
+import { useBackgroundTimer } from "@/hooks/useBackgroundTimer";
 import {
   STRETCH_SEQUENCE,
   STRETCH_TOTAL_SEC,
@@ -302,8 +303,9 @@ function StretchStep({ onDone }: { onDone: (sec: number) => void }) {
 // --- Step 3: Walk ---
 function WalkStep({ onDone }: { onDone: (sec: number, steps: number | undefined) => void }) {
   const { speak, cancel } = useSpeech();
-  const [sec, setSec] = useState(0);
-  const [paused, setPaused] = useState(false);
+  // Wall-clock timer: keeps counting while you walk with the phone in your
+  // pocket or another app open, and resumes if the PWA is reopened mid-walk.
+  const { seconds: sec, paused, toggle, clear } = useBackgroundTimer("jos.walk");
   const [stepsDraft, setStepsDraft] = useState("");
   const bucketRef = useRef(0);
 
@@ -312,12 +314,6 @@ function WalkStep({ onDone }: { onDone: (sec: number, steps: number | undefined)
     return () => cancel();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  useEffect(() => {
-    if (paused) return;
-    const id = setInterval(() => setSec((s) => s + 1), 1000);
-    return () => clearInterval(id);
-  }, [paused]);
 
   // Spoken check-in every ~10 minutes.
   useEffect(() => {
@@ -334,7 +330,9 @@ function WalkStep({ onDone }: { onDone: (sec: number, steps: number | undefined)
 
   const finish = () => {
     const n = stepsDraft.trim() === "" ? undefined : Number(stepsDraft);
-    onDone(sec, Number.isFinite(n as number) ? n : undefined);
+    const total = sec;
+    clear();
+    onDone(total, Number.isFinite(n as number) ? n : undefined);
   };
 
   return (
@@ -353,9 +351,12 @@ function WalkStep({ onDone }: { onDone: (sec: number, steps: number | undefined)
         </CardContent>
       </Card>
 
-      <Button variant="soft" size="md" className="w-full" onClick={() => setPaused((p) => !p)}>
+      <Button variant="soft" size="md" className="w-full" onClick={toggle}>
         {paused ? <><Play className="h-4 w-4" /> Resume walk</> : <><Pause className="h-4 w-4" /> Pause</>}
       </Button>
+      <p className="-mt-2 text-center text-[11px] text-mist-600">
+        Keeps timing with the screen off or another app open.
+      </p>
 
       <Card>
         <CardContent className="pt-5">
@@ -377,7 +378,10 @@ function WalkStep({ onDone }: { onDone: (sec: number, steps: number | undefined)
         <Check className="h-5 w-5" /> Finish walk
       </Button>
       <button
-        onClick={() => onDone(0, undefined)}
+        onClick={() => {
+          clear();
+          onDone(0, undefined);
+        }}
         className="w-full py-1 text-center text-sm text-mist-500 hover:text-mist-300"
       >
         Skip — I&apos;ll walk later today
