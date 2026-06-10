@@ -11,6 +11,8 @@ import { cn } from "@/lib/utils";
 export function VoicePicker({ className }: { className?: string }) {
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [selected, setSelected] = useState<string>("");
+  // null = still checking; true/false = premium AI voice configured or not.
+  const [premium, setPremium] = useState<boolean | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined" || !window.speechSynthesis) return;
@@ -18,6 +20,10 @@ export function VoicePicker({ className }: { className?: string }) {
     refresh();
     window.speechSynthesis.addEventListener("voiceschanged", refresh);
     setSelected(loadVoicePreference() ?? "");
+    fetch("/api/tts")
+      .then((r) => r.json())
+      .then((d) => setPremium(!!d.configured))
+      .catch(() => setPremium(false));
     return () => window.speechSynthesis.removeEventListener("voiceschanged", refresh);
   }, []);
 
@@ -50,6 +56,37 @@ export function VoicePicker({ className }: { className?: string }) {
       <div className="mb-2 flex items-center gap-2 text-sm font-medium text-mist-100">
         <Volume2 className="h-4 w-4 text-sky-400" /> Coach voice
       </div>
+
+      {/* Premium voice status — the real reason a voice sounds modern or robotic. */}
+      {premium !== null && (
+        <div
+          className={cn(
+            "mb-3 flex items-start gap-2 rounded-xl border p-2.5 text-xs leading-relaxed",
+            premium
+              ? "border-sage-500/25 bg-sage-500/5 text-sage-200"
+              : "border-ember-500/25 bg-ember-500/5 text-ember-200/90"
+          )}
+        >
+          <span
+            className={cn(
+              "mt-1 h-1.5 w-1.5 shrink-0 rounded-full",
+              premium ? "bg-sage-400" : "bg-ember-400"
+            )}
+          />
+          {premium ? (
+            <span>
+              Premium AI voice is <strong>active</strong>. If it still sounds robotic, this
+              device fell back to a built-in voice — pick a natural one below.
+            </span>
+          ) : (
+            <span>
+              Premium AI voice is <strong>not configured</strong>, so you&apos;re hearing your
+              device&apos;s built-in voice. Set <code>OPENAI_API_KEY</code> on the server to enable
+              the natural voice. Meanwhile, pick the best installed one below.
+            </span>
+          )}
+        </div>
+      )}
       <div className="flex items-center gap-2">
         <select
           value={selected}
