@@ -62,6 +62,15 @@ export interface DayEntry {
   movedMountain?: boolean | null; // set during reflection
   morning?: MorningCheckIn;
   reflection?: DailyReflection;
+  supplementsTaken?: string[]; // supplement item ids taken today
+  fastBrokenAt?: string; // ISO time the eating window opened today
+}
+
+// A supplement or medication in the nightly routine.
+export interface SupplementItem {
+  id: string;
+  name: string;
+  when?: string; // e.g. "Dinner", "After dinner", "Bedtime"
 }
 
 // A movement part of the ritual that can be set aside in the morning and
@@ -303,6 +312,9 @@ export interface JeremyState {
   scorecard: ScorecardItem[];
   // Slack items you've swiped away as handled (keyed per message).
   slackDone?: string[];
+  // Supplements / meds in the nightly routine + an optional fasting window.
+  supplements?: SupplementItem[];
+  fastUntil?: string; // "HH:MM" — when the eating window opens
   // Personal secret-address (.ics) Calendar feed URL, when set in-app.
   calendarIcsUrl?: string;
   // The Slack channel (id or name) that carries Cowork task briefs.

@@ -18,6 +18,7 @@ import { RitualMakeupCard } from "@/components/dashboard/RitualMakeupCard";
 import { CostMeterCard } from "@/components/dashboard/CostMeterCard";
 import { DayCard } from "@/components/dashboard/DayCard";
 import { MovementCard } from "@/components/dashboard/MovementCard";
+import { SupplementsReminder } from "@/components/dashboard/SupplementsReminder";
 import { QuickAddFab } from "@/components/QuickAddFab";
 import { StatTile } from "@/components/StatTile";
 import { useStore } from "@/lib/store";
@@ -253,6 +254,9 @@ function Dashboard() {
           <span className="text-xs text-mist-500">Private. No streak-shaming</span>
         </Link>
       </div>
+
+      {/* Evening nudge to take supplements/meds */}
+      <SupplementsReminder />
 
       {/* Check-in shortcuts */}
       <div className="grid grid-cols-2 gap-3">

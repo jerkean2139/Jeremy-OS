@@ -125,6 +125,12 @@ interface StoreActions {
   toggleCoworkDone: (id: string) => void;
   // Upsert a 1/10 feeling rating for a calendar event.
   rateEvent: (r: Omit<EventRating, "ratedAt">) => void;
+
+  // Supplements / meds.
+  addSupplement: (name: string, when?: string) => void;
+  removeSupplement: (id: string) => void;
+  toggleSupplementTaken: (id: string, date?: string) => void;
+  setFastUntil: (hhmm: string) => void;
   // Record one metered AI call (estimated cost).
   recordAiUsage: (entry: Omit<AiUsageEntry, "id" | "ts"> & { ts?: string }) => void;
   importState: (data: Partial<JeremyState>) => void;
@@ -452,6 +458,28 @@ export const useStore = create<Store>()(
 
       setCalendarIcsUrl: (url) => set({ calendarIcsUrl: url.trim() || undefined }),
 
+      addSupplement: (name, when) =>
+        set((s) => ({
+          supplements: [
+            ...(s.supplements ?? []),
+            { id: uid(), name: name.trim(), when: when?.trim() || undefined },
+          ],
+        })),
+
+      removeSupplement: (id) =>
+        set((s) => ({ supplements: (s.supplements ?? []).filter((x) => x.id !== id) })),
+
+      toggleSupplementTaken: (id, date) =>
+        set((s) => {
+          const key = date ?? todayKey();
+          const day = s.days[key] ?? emptyDay(key);
+          const taken = day.supplementsTaken ?? [];
+          const next = taken.includes(id) ? taken.filter((x) => x !== id) : [...taken, id];
+          return { days: { ...s.days, [key]: { ...day, supplementsTaken: next } } };
+        }),
+
+      setFastUntil: (hhmm) => set({ fastUntil: hhmm.trim() || undefined }),
+
       setCoworkChannel: (channel) => set({ coworkChannel: channel.trim() || undefined }),
 
       toggleCoworkDone: (id) =>
@@ -520,6 +548,8 @@ export const useStore = create<Store>()(
         keyHabitLaws: s.keyHabitLaws,
         scorecard: s.scorecard,
         slackDone: s.slackDone,
+        supplements: s.supplements,
+        fastUntil: s.fastUntil,
         calendarIcsUrl: s.calendarIcsUrl,
         coworkChannel: s.coworkChannel,
         coworkDone: s.coworkDone,
