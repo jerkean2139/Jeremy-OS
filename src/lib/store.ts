@@ -17,6 +17,7 @@ import {
   type ScriptureProgress,
   type ScriptureBookmark,
   type AiUsageEntry,
+  type EventRating,
   type Habit,
   type HabitLaws,
   type HabitKind,
@@ -118,6 +119,8 @@ interface StoreActions {
   toggleSlackDone: (id: string) => void;
   // The personal Calendar (.ics) feed URL, set in-app.
   setCalendarIcsUrl: (url: string) => void;
+  // Upsert a 1/10 feeling rating for a calendar event.
+  rateEvent: (r: Omit<EventRating, "ratedAt">) => void;
   // Record one metered AI call (estimated cost).
   recordAiUsage: (entry: Omit<AiUsageEntry, "id" | "ts"> & { ts?: string }) => void;
   importState: (data: Partial<JeremyState>) => void;
@@ -445,6 +448,19 @@ export const useStore = create<Store>()(
 
       setCalendarIcsUrl: (url) => set({ calendarIcsUrl: url.trim() || undefined }),
 
+      rateEvent: (r) =>
+        set((s) => {
+          const list = s.eventRatings ?? [];
+          const entry = { ...r, ratedAt: new Date().toISOString() };
+          const existing = list.findIndex((x) => x.key === r.key);
+          if (existing >= 0) {
+            const next = [...list];
+            next[existing] = entry;
+            return { eventRatings: next };
+          }
+          return { eventRatings: [...list, entry] };
+        }),
+
       recordAiUsage: (entry) =>
         set((s) => {
           const log = s.aiUsage ?? [];
@@ -493,6 +509,7 @@ export const useStore = create<Store>()(
         scorecard: s.scorecard,
         slackDone: s.slackDone,
         calendarIcsUrl: s.calendarIcsUrl,
+        eventRatings: s.eventRatings,
         aiUsage: s.aiUsage,
         onboardedAt: s.onboardedAt,
       }),

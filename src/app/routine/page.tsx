@@ -98,7 +98,7 @@ function Ritual() {
           stretchSec={stretchSec}
           walkSec={walkSec}
           steps={steps}
-          onDone={() => router.push("/")}
+          onDone={() => router.push("/day")}
         />
       )}
     </div>
@@ -557,7 +557,7 @@ function CompleteStep({
       </div>
 
       <Button size="lg" className="w-full" onClick={onDone}>
-        At the computer — let&apos;s go <ArrowRight className="h-5 w-5" />
+        At the computer — see my day <ArrowRight className="h-5 w-5" />
       </Button>
     </div>
   );

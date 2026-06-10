@@ -7,11 +7,26 @@ import { HydrationGate } from "@/components/HydrationGate";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { VoiceChat } from "@/components/VoiceChat";
+import { DayDebrief } from "@/components/DayDebrief";
 import { useStore } from "@/lib/store";
-import { fmtRange, overloadRead, agendaText, type CalEvent } from "@/lib/calendar";
+import {
+  fmtRange,
+  overloadRead,
+  agendaText,
+  debriefText,
+  ratingKey,
+  type CalEvent,
+} from "@/lib/calendar";
 import type { CalendarResponse } from "@/app/api/calendar/route";
 import { todayKey } from "@/lib/utils";
 import { cn } from "@/lib/utils";
+
+function yesterdayKey(): string {
+  const d = new Date(Date.now() - 86400000);
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${d.getFullYear()}-${m}-${day}`;
+}
 
 export default function DayPage() {
   return (
@@ -26,6 +41,7 @@ function Day() {
   const setIcsUrl = useStore((s) => s.setCalendarIcsUrl);
   const day = useStore((s) => s.getDay());
   const memory = useStore((s) => s.coachMemory);
+  const eventRatings = useStore((s) => s.eventRatings);
 
   const [data, setData] = useState<CalendarResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -54,10 +70,16 @@ function Day() {
     () => data?.days.find((d) => d.date === todayKey())?.events ?? [],
     [data]
   );
+  const yesterday = useMemo(
+    () => data?.days.find((d) => d.date === yesterdayKey())?.events ?? [],
+    [data]
+  );
   const overload = useMemo(() => overloadRead(events), [events]);
 
   const context = useMemo(() => {
     const mountain = day.morning?.mountain?.trim() || day.mountain?.trim();
+    const ratingMap = new Map((eventRatings ?? []).map((r) => [r.key, r.feeling]));
+    const scoreFor = (e: CalEvent) => ratingMap.get(ratingKey(yesterdayKey(), e.uid));
     const parts = [
       "Today's calendar:",
       agendaText(events),
@@ -66,9 +88,10 @@ function Day() {
       `\nMeeting load: ${overload.meetingCount} meetings, ~${overload.meetingMinutes} min${
         overload.overloaded ? " (heavy day)" : ""
       }.`,
+      yesterday.length ? `\nYesterday's events (ask how they went):\n${debriefText(yesterday, scoreFor)}` : "",
     ];
     return parts.filter(Boolean).join("\n");
-  }, [events, day, overload]);
+  }, [events, yesterday, day, overload, eventRatings]);
 
   return (
     <div>
@@ -96,6 +119,9 @@ function Day() {
         </Card>
       ) : (
         <>
+          {/* Yesterday's debrief — rate how each event landed */}
+          <DayDebrief date={yesterdayKey()} events={yesterday} />
+
           <div className="mb-4 flex items-center justify-between">
             <div className="text-[11px] font-medium uppercase tracking-[0.16em] text-mist-500">
               {events.length} event{events.length === 1 ? "" : "s"} today
@@ -143,7 +169,11 @@ function Day() {
           <VoiceChat
             context={context}
             memory={memory}
-            opener="Let's look at your day. Walk me through what's on the calendar and what matters most — I'll help you compare it to your mountain and the noise."
+            opener={
+              yesterday.length
+                ? "Morning. Before we plan today — how did yesterday actually go? Walk me through how the meetings and tasks landed, then we'll look at today against your mountain."
+                : "Let's look at your day. Walk me through what's on the calendar and what matters most — I'll help you compare it to your mountain and the noise."
+            }
           />
         </>
       )}
