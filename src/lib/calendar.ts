@@ -81,3 +81,31 @@ export function agendaText(events: CalEvent[]): string {
     .map((e) => `- ${fmtRange(e)} ${e.summary}${e.isMeeting ? " [meeting]" : ""}${e.location ? ` @ ${e.location}` : ""}`)
     .join("\n");
 }
+
+// Stable per-instance key for a feeling rating.
+export function ratingKey(date: string, uid: string): string {
+  return `${date}:${uid}`;
+}
+
+// Calm colour for a 1–10 feeling — sage (good) → ember (drained), never red-alarm.
+export function feelingColor(n: number): string {
+  if (n >= 7) return "text-sage-400";
+  if (n >= 4) return "text-ember-400";
+  return "text-ember-500";
+}
+
+// Yesterday's events + any feeling scores, for the coach to ask about.
+export function debriefText(
+  events: CalEvent[],
+  scoreFor: (e: CalEvent) => number | undefined
+): string {
+  if (!events.length) return "No calendar events yesterday.";
+  return events
+    .map((e) => {
+      const s = scoreFor(e);
+      return `- ${e.summary}${e.isMeeting ? " [meeting]" : ""}${
+        s != null ? ` — felt ${s}/10` : " — not yet rated"
+      }`;
+    })
+    .join("\n");
+}

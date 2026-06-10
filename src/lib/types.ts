@@ -258,6 +258,18 @@ export const DEFAULT_REMINDERS: ReminderPrefs = {
   habits: { enabled: false, time: "12:00" },
 };
 
+// How a calendar event landed — your 1/10 feeling after it, captured next day.
+export interface EventRating {
+  key: string; // `${date}:${uid}` — stable per event instance
+  uid: string;
+  date: string; // the day the event occurred, YYYY-MM-DD
+  summary: string;
+  isMeeting: boolean;
+  feeling: number; // 1 (drained) … 10 (energized)
+  note?: string;
+  ratedAt: string; // ISO
+}
+
 // One metered AI call — estimated cost plus the raw usage it came from.
 export interface AiUsageEntry {
   id: string;
@@ -293,6 +305,8 @@ export interface JeremyState {
   slackDone?: string[];
   // Personal secret-address (.ics) Calendar feed URL, when set in-app.
   calendarIcsUrl?: string;
+  // 1/10 "how did it land" ratings for calendar events, captured next-day.
+  eventRatings?: EventRating[];
   // Estimated AI spend, one entry per OpenAI-backed call.
   aiUsage?: AiUsageEntry[];
   // ISO timestamp of when first-run onboarding was completed; null until then.
