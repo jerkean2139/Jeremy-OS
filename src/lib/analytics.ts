@@ -8,6 +8,7 @@ import {
   type TheaterLog,
   type PulseEntry,
   type PulseTag,
+  type EventRating,
 } from "./types";
 import { todayKey } from "./utils";
 
@@ -82,6 +83,7 @@ export interface DailyPoint {
   pulseMountain: number;
   pulseNoise: number;
   focusPct: number | null; // % of pulses on the Mountain that day
+  eventFeeling: number | null; // avg 1–10 feeling across that day's events
 }
 
 export function buildSeries(
@@ -90,7 +92,8 @@ export function buildSeries(
   theaterLogs: TheaterLog[],
   pulseLogs: PulseEntry[],
   rangeDays: number,
-  now = new Date()
+  now = new Date(),
+  eventRatings: EventRating[] = []
 ): DailyPoint[] {
   const out: DailyPoint[] = [];
   for (let i = rangeDays - 1; i >= 0; i--) {
@@ -99,6 +102,10 @@ export function buildSeries(
     const key = todayKey(d);
     const day = days[key];
     const pulses = summarizePulses(pulsesOn(pulseLogs, key));
+    const dayRatings = eventRatings.filter((r) => r.date === key);
+    const eventFeeling = dayRatings.length
+      ? Math.round((dayRatings.reduce((a, r) => a + r.feeling, 0) / dayRatings.length) * 10) / 10
+      : null;
     out.push({
       date: key,
       label: d.toLocaleDateString(undefined, { weekday: "short" }),
@@ -117,6 +124,7 @@ export function buildSeries(
       pulseMountain: pulses.byTag.mountain,
       pulseNoise: pulses.byTag.noise,
       focusPct: pulses.total ? Math.round(pulses.focusRatio * 100) : null,
+      eventFeeling,
     });
   }
   return out;
@@ -182,6 +190,9 @@ export function correlations(series: DailyPoint[]): Correlation[] {
     { label: "Productive days vs Elevator", a: "movedMountain", b: "floors" },
     { label: "Focus vs Pressure", a: "focusPct", b: "pressure" },
     { label: "Focus vs Elevator", a: "focusPct", b: "floors" },
+    { label: "Day's feeling vs Pressure", a: "eventFeeling", b: "pressure" },
+    { label: "Day's feeling vs Elevator", a: "eventFeeling", b: "floors" },
+    { label: "Day's feeling vs Theater", a: "eventFeeling", b: "acts" },
   ];
   const out: Correlation[] = [];
   for (const def of defs) {
