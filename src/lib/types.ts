@@ -305,6 +305,10 @@ export interface JeremyState {
   slackDone?: string[];
   // Personal secret-address (.ics) Calendar feed URL, when set in-app.
   calendarIcsUrl?: string;
+  // The Slack channel (id or name) that carries Cowork task briefs.
+  coworkChannel?: string;
+  // Cowork briefs swiped away as handled (keyed per message ts).
+  coworkDone?: string[];
   // 1/10 "how did it land" ratings for calendar events, captured next-day.
   eventRatings?: EventRating[];
   // Estimated AI spend, one entry per OpenAI-backed call.

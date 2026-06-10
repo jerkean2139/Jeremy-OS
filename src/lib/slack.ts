@@ -232,3 +232,107 @@ async function summarize(d: {
     return undefined;
   }
 }
+
+// --- Cowork briefs: pull recent messages from one designated Slack channel ---
+
+export interface CoworkBrief {
+  id: string; // message ts (stable per message)
+  text: string;
+  ts: string;
+  author?: string;
+  permalink?: string;
+}
+
+export interface CoworkData {
+  configured: boolean; // token + channel both set
+  ok: boolean;
+  error?: string;
+  channelName?: string;
+  briefs: CoworkBrief[];
+  fetchedAt: string;
+}
+
+const CAP_BRIEFS = 12;
+
+async function resolveChannelId(token: string, input: string): Promise<{ id?: string; name?: string }> {
+  const raw = input.trim().replace(/^#/, "");
+  // Already an ID (channel/group/DM ids start with C/G/D).
+  if (/^[CGD][A-Z0-9]{6,}$/.test(raw)) {
+    const info = await call("conversations.info", token, { channel: raw });
+    return { id: raw, name: info.ok ? (info.channel as Json).name : undefined };
+  }
+  // Otherwise match by name across the channels the user can see.
+  const list = await call("users.conversations", token, {
+    types: "public_channel,private_channel",
+    exclude_archived: true,
+    limit: 1000,
+  });
+  if (list.ok) {
+    const match = ((list.channels as Json[]) || []).find(
+      (c) => (c.name as string)?.toLowerCase() === raw.toLowerCase()
+    );
+    if (match) return { id: match.id as string, name: match.name as string };
+  }
+  return {};
+}
+
+export async function getCoworkBriefs(channelInput?: string): Promise<CoworkData> {
+  const token = process.env.SLACK_TOKEN;
+  const channel = (channelInput || process.env.COWORK_SLACK_CHANNEL || "").trim();
+  const base: CoworkData = {
+    configured: !!token && !!channel,
+    ok: false,
+    briefs: [],
+    fetchedAt: new Date().toISOString(),
+  };
+  if (!token || !channel) return base;
+
+  const auth = await call("auth.test", token);
+  if (!auth.ok) return { ...base, error: auth.error || "auth_failed" };
+
+  const { id, name } = await resolveChannelId(token, channel);
+  if (!id) return { ...base, error: "channel_not_found" };
+
+  const history = await call("conversations.history", token, { channel: id, limit: CAP_BRIEFS });
+  if (!history.ok) return { ...base, channelName: name, error: history.error || "history_failed" };
+
+  const messages = ((history.messages as Json[]) || []).filter(
+    (m) => !m.subtype || m.subtype === "bot_message" || m.subtype === "thread_broadcast"
+  );
+
+  // Resolve author names.
+  const userMap = new Map<string, string>();
+  const ids = Array.from(new Set(messages.map((m) => m.user as string).filter(Boolean)));
+  await Promise.all(
+    ids.map(async (uid) => {
+      const info = await call("users.info", token, { user: uid });
+      if (info.ok) {
+        const u = info.user as Json;
+        userMap.set(uid, u.profile?.display_name || u.real_name || u.name || "user");
+      }
+    })
+  );
+
+  const briefs: CoworkBrief[] = messages
+    .map((m) => {
+      const text = clean(m.text as string, userMap);
+      if (!text) return null;
+      return {
+        id: m.ts as string,
+        ts: m.ts as string,
+        text,
+        author: m.user ? userMap.get(m.user as string) : m.username,
+      } as CoworkBrief;
+    })
+    .filter((b): b is CoworkBrief => !!b);
+
+  // Best-effort permalinks (capped, parallel).
+  await Promise.all(
+    briefs.slice(0, CAP_BRIEFS).map(async (b) => {
+      const link = await call("chat.getPermalink", token, { channel: id, message_ts: b.ts });
+      if (link.ok) b.permalink = link.permalink as string;
+    })
+  );
+
+  return { ...base, ok: true, channelName: name, briefs };
+}
