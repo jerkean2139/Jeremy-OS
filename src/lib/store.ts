@@ -131,6 +131,12 @@ interface StoreActions {
   removeSupplement: (id: string) => void;
   toggleSupplementTaken: (id: string, date?: string) => void;
   setFastUntil: (hhmm: string) => void;
+
+  // Audio tab preferences.
+  setAudioMode: (mode: "8d" | "binaural") => void;
+  setEightDPreset: (id: number) => void;
+  setBinauralPreset: (id: number) => void;
+  ackAudioHeadphones: () => void;
   // Record one metered AI call (estimated cost).
   recordAiUsage: (entry: Omit<AiUsageEntry, "id" | "ts"> & { ts?: string }) => void;
   importState: (data: Partial<JeremyState>) => void;
@@ -480,6 +486,11 @@ export const useStore = create<Store>()(
 
       setFastUntil: (hhmm) => set({ fastUntil: hhmm.trim() || undefined }),
 
+      setAudioMode: (mode) => set({ audioMode: mode }),
+      setEightDPreset: (id) => set({ eightDPresetId: id }),
+      setBinauralPreset: (id) => set({ binauralPresetId: id }),
+      ackAudioHeadphones: () => set({ audioHeadphoneAck: true }),
+
       setCoworkChannel: (channel) => set({ coworkChannel: channel.trim() || undefined }),
 
       toggleCoworkDone: (id) =>
@@ -550,6 +561,10 @@ export const useStore = create<Store>()(
         slackDone: s.slackDone,
         supplements: s.supplements,
         fastUntil: s.fastUntil,
+        audioMode: s.audioMode,
+        eightDPresetId: s.eightDPresetId,
+        binauralPresetId: s.binauralPresetId,
+        audioHeadphoneAck: s.audioHeadphoneAck,
         calendarIcsUrl: s.calendarIcsUrl,
         coworkChannel: s.coworkChannel,
         coworkDone: s.coworkDone,
