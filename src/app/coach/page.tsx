@@ -8,6 +8,7 @@ import { HydrationGate } from "@/components/HydrationGate";
 import { Button } from "@/components/ui/Button";
 import { useStore } from "@/lib/store";
 import { buildCoachContext } from "@/lib/coach-context";
+import { fetchDayContext } from "@/lib/day-context";
 import { askCoach } from "@/lib/ai-client";
 import { cn } from "@/lib/utils";
 
@@ -20,10 +21,10 @@ export default function CoachPage() {
 }
 
 const STARTERS = [
-  "Why do I keep taking the Elevator?",
+  "Plan my day with me.",
   "I feel overwhelmed. Help me focus.",
+  "What's the one move that moves the mountain today?",
   "How are my habits shaping who I'm becoming?",
-  "What's my one move today?",
 ];
 
 function Coach() {
@@ -48,14 +49,20 @@ function Coach() {
   const [newMemory, setNewMemory] = useState("");
   const [learning, setLearning] = useState(false);
   const [memoryNote, setMemoryNote] = useState<string | null>(null);
+  // Live day context (calendar + Slack triage + Cowork briefs), loaded once.
+  const [dayContext, setDayContext] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [history, thinking]);
 
-  const buildContext = () =>
-    buildCoachContext({
+  useEffect(() => {
+    fetchDayContext().then(setDayContext).catch(() => {});
+  }, []);
+
+  const buildContext = () => {
+    const base = buildCoachContext({
       days,
       elevatorLogs,
       theaterLogs,
@@ -65,6 +72,8 @@ function Coach() {
       scorecard: scorecard ?? [],
       scripture,
     });
+    return dayContext ? `${base}\n\nTODAY (live):\n${dayContext}` : base;
+  };
 
   const send = async (text: string) => {
     const content = text.trim();
