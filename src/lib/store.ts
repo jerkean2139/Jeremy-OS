@@ -18,6 +18,7 @@ import {
   type ScriptureBookmark,
   type AiUsageEntry,
   type EventRating,
+  type PlanTask,
   type Habit,
   type HabitLaws,
   type HabitKind,
@@ -125,6 +126,11 @@ interface StoreActions {
   toggleCoworkDone: (id: string) => void;
   // Upsert a 1/10 feeling rating for a calendar event.
   rateEvent: (r: Omit<EventRating, "ratedAt">) => void;
+
+  // Day-plan tasks slotted into fixed calendar blocks.
+  addPlanTask: (date: string, text: string) => void;
+  patchPlanTask: (id: string, patch: Partial<Pick<PlanTask, "text" | "blockKey" | "order" | "done">>) => void;
+  removePlanTask: (id: string) => void;
 
   // Supplements / meds.
   addSupplement: (name: string, when?: string) => void;
@@ -499,6 +505,23 @@ export const useStore = create<Store>()(
           return { coworkDone: done.includes(id) ? done.filter((x) => x !== id) : [...done, id] };
         }),
 
+      addPlanTask: (date, text) =>
+        set((s) => {
+          const list = s.planTasks ?? [];
+          const order = list.filter((t) => t.date === date && t.blockKey === null).length;
+          return {
+            planTasks: [...list, { id: uid(), date, text: text.trim(), blockKey: null, order }],
+          };
+        }),
+
+      patchPlanTask: (id, patch) =>
+        set((s) => ({
+          planTasks: (s.planTasks ?? []).map((t) => (t.id === id ? { ...t, ...patch } : t)),
+        })),
+
+      removePlanTask: (id) =>
+        set((s) => ({ planTasks: (s.planTasks ?? []).filter((t) => t.id !== id) })),
+
       rateEvent: (r) =>
         set((s) => {
           const list = s.eventRatings ?? [];
@@ -569,6 +592,7 @@ export const useStore = create<Store>()(
         coworkChannel: s.coworkChannel,
         coworkDone: s.coworkDone,
         eventRatings: s.eventRatings,
+        planTasks: s.planTasks,
         aiUsage: s.aiUsage,
         onboardedAt: s.onboardedAt,
       }),

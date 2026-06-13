@@ -267,6 +267,17 @@ export const DEFAULT_REMINDERS: ReminderPrefs = {
   habits: { enabled: false, time: "12:00" },
 };
 
+// A task you slot into one of the day's fixed calendar blocks. The block times
+// never move — you just shuffle what's inside them.
+export interface PlanTask {
+  id: string;
+  date: string; // YYYY-MM-DD
+  text: string;
+  blockKey: string | null; // calendar event uid, or null = backlog (unassigned)
+  order: number;
+  done?: boolean;
+}
+
 // How a calendar event landed — your 1/10 feeling after it, captured next day.
 export interface EventRating {
   key: string; // `${date}:${uid}` — stable per event instance
@@ -328,6 +339,8 @@ export interface JeremyState {
   coworkDone?: string[];
   // 1/10 "how did it land" ratings for calendar events, captured next-day.
   eventRatings?: EventRating[];
+  // Tasks slotted into the day's fixed calendar blocks.
+  planTasks?: PlanTask[];
   // Estimated AI spend, one entry per OpenAI-backed call.
   aiUsage?: AiUsageEntry[];
   // ISO timestamp of when first-run onboarding was completed; null until then.
