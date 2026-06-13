@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { BottomNav } from "@/components/BottomNav";
+import { PulseNudge } from "@/components/PulseNudge";
 import { PWARegister } from "@/components/PWARegister";
 import { SyncProvider } from "@/components/SyncProvider";
 import { Onboarding } from "@/components/Onboarding";
@@ -39,6 +40,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           {children}
         </main>
         <BottomNav />
+        <PulseNudge />
         <Onboarding />
       </body>
     </html>
