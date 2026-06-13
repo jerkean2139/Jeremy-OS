@@ -1,12 +1,33 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Bot, RefreshCw, Link2 } from "lucide-react";
+import { Bot, RefreshCw, Link2, CalendarPlus, Check } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/Card";
 import { SwipeRow } from "@/components/SwipeRow";
 import { useStore } from "@/lib/store";
 import type { CoworkData, CoworkBrief } from "@/lib/slack";
 import { cn } from "@/lib/utils";
+
+// Create a 30-min block at the next half hour from a brief's text.
+async function scheduleFromText(text: string): Promise<boolean> {
+  const start = new Date();
+  start.setMinutes(start.getMinutes() > 30 ? 60 : 30, 0, 0);
+  const end = new Date(start.getTime() + 30 * 60000);
+  const local = (d: Date) => {
+    const p = (n: number) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}:00`;
+  };
+  try {
+    const res = await fetch("/api/calendar/create", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ summary: text.slice(0, 100), start: local(start), end: local(end) }),
+    });
+    return (await res.json()).ok === true;
+  } catch {
+    return false;
+  }
+}
 
 // Recent results from your scheduled Claude Cowork tasks (pulled from a Slack
 // channel), shown above the Slack briefing so they're part of the 7am scan.
@@ -25,6 +46,14 @@ export function CoworkBriefs({
 
   const [data, setData] = useState<CoworkData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [canSchedule, setCanSchedule] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/calendar/create", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d) => setCanSchedule(!!d.configured))
+      .catch(() => {});
+  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -93,7 +122,7 @@ export function CoworkBriefs({
           <div className="space-y-1.5">
             {active.map((b) => (
               <SwipeRow key={b.id} onComplete={() => toggleDone(b.id)}>
-                <BriefRow b={b} />
+                <BriefRow b={b} canSchedule={canSchedule} />
               </SwipeRow>
             ))}
           </div>
@@ -106,19 +135,51 @@ export function CoworkBriefs({
   );
 }
 
-function BriefRow({ b }: { b: CoworkBrief }) {
-  const body = (
-    <div className="rounded-lg bg-ink-800/50 px-3 py-2">
+function BriefRow({ b, canSchedule }: { b: CoworkBrief; canSchedule?: boolean }) {
+  const [sched, setSched] = useState<"idle" | "busy" | "done" | "err">("idle");
+
+  const text = (
+    <div className="min-w-0">
       {b.author && <div className="text-[11px] text-mist-500">{b.author}</div>}
       <div className="line-clamp-3 text-sm text-mist-200">{b.text}</div>
     </div>
   );
-  return b.permalink ? (
-    <a href={b.permalink} target="_blank" rel="noreferrer" className="block transition-colors hover:opacity-90">
-      {body}
-    </a>
-  ) : (
-    body
+
+  const onSchedule = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (sched === "busy") return;
+    setSched("busy");
+    setSched((await scheduleFromText(b.text)) ? "done" : "err");
+  };
+
+  return (
+    <div className="flex items-center gap-2 rounded-lg bg-ink-800/50 px-3 py-2">
+      {b.permalink ? (
+        <a href={b.permalink} target="_blank" rel="noreferrer" className="min-w-0 flex-1 hover:opacity-90">
+          {text}
+        </a>
+      ) : (
+        <div className="min-w-0 flex-1">{text}</div>
+      )}
+      {canSchedule && (
+        <button
+          onClick={onSchedule}
+          title="Add a 30-min block to your calendar"
+          className={cn(
+            "shrink-0 rounded-lg p-1.5 transition-colors",
+            sched === "done"
+              ? "text-sage-400"
+              : sched === "err"
+              ? "text-ember-400"
+              : "text-mist-500 hover:bg-ink-700 hover:text-sky-300"
+          )}
+          aria-label="Add to calendar"
+        >
+          {sched === "done" ? <Check className="h-4 w-4" /> : <CalendarPlus className="h-4 w-4" />}
+        </button>
+      )}
+    </div>
   );
 }
 
