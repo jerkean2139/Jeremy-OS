@@ -192,11 +192,15 @@ export async function diagnoseGcal(): Promise<GcalStatus> {
   if (!token) return { configured: true, ok: false, method, calendarId: id, error: "auth_failed" };
 
   try {
-    const res = await fetch(`${API}/calendars/${encodeURIComponent(id)}`, {
+    // Verify access with an events call — it matches the calendar.events scope
+    // the token carries (calendars.get needs a broader scope and would 403).
+    const res = await fetch(`${API}/calendars/${encodeURIComponent(id)}/events?maxResults=1`, {
       headers: { Authorization: `Bearer ${token}` },
       cache: "no-store",
     });
     if (res.ok) return { configured: true, ok: true, method, calendarId: id };
+    // 404 = calendar not shared with the service account (or wrong id);
+    // 403 = shared/exists but access denied (e.g. Calendar API not enabled).
     if (res.status === 403 || res.status === 404) {
       return { configured: true, ok: false, method, calendarId: id, error: "no_calendar_access" };
     }
