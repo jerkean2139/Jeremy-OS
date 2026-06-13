@@ -246,6 +246,18 @@ function Reminders() {
                   />
                 </div>
               </div>
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <span className="text-sm text-mist-400">Nudge me in-app</span>
+                  <p className="text-[11px] text-mist-600">
+                    Pops a quick check while the app is open — works with no push setup.
+                  </p>
+                </div>
+                <Toggle
+                  on={reminders.pulse.inApp !== false}
+                  onChange={(v) => setReminders({ pulse: { ...reminders.pulse, inApp: v } })}
+                />
+              </div>
             </div>
           </CardContent>
         </Card>

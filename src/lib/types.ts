@@ -254,7 +254,7 @@ export interface ReminderPrefs {
   pushEnabled: boolean;
   morning: { enabled: boolean; time: string }; // "HH:MM" local-ish (see cron note)
   reflection: { enabled: boolean; time: string };
-  pulse: { enabled: boolean; cadenceMin: number; startTime: string; endTime: string };
+  pulse: { enabled: boolean; cadenceMin: number; startTime: string; endTime: string; inApp?: boolean };
   // A gentle daily nudge to do the day's build habits — the two-minute version.
   habits: { enabled: boolean; time: string };
 }
@@ -263,7 +263,7 @@ export const DEFAULT_REMINDERS: ReminderPrefs = {
   pushEnabled: false,
   morning: { enabled: true, time: "06:00" },
   reflection: { enabled: true, time: "21:00" },
-  pulse: { enabled: false, cadenceMin: 60, startTime: "09:00", endTime: "17:00" },
+  pulse: { enabled: false, cadenceMin: 60, startTime: "09:00", endTime: "17:00", inApp: true },
   habits: { enabled: false, time: "12:00" },
 };
 
