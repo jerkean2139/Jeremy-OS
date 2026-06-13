@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { VoiceChat } from "@/components/VoiceChat";
 import { DayDebrief } from "@/components/DayDebrief";
+import { DayPlanner } from "@/components/DayPlanner";
 import { ScheduleBlock } from "@/components/ScheduleBlock";
 import { useStore } from "@/lib/store";
 import {
@@ -163,6 +164,9 @@ function Day() {
               ))}
             </div>
           )}
+
+          {/* Plan tasks into today's fixed calendar blocks */}
+          <DayPlanner date={todayKey()} events={events} />
 
           {/* Drop a focused time block onto Google Calendar */}
           <div className="mb-5">
