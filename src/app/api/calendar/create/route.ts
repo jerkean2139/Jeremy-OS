@@ -1,12 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createCalendarEvent, gcalConfigured } from "@/lib/gcal";
+import { createCalendarEvent, diagnoseGcal } from "@/lib/gcal";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-// GET → whether write access is configured (so the UI can show/hide scheduling).
+// GET → end-to-end status (configured? auth ok? calendar reachable?) so the UI
+// can confirm the connection or name the exact gap.
 export async function GET() {
-  return NextResponse.json({ configured: gcalConfigured() });
+  return NextResponse.json(await diagnoseGcal(), {
+    headers: { "Cache-Control": "no-store" },
+  });
 }
 
 // POST → create a calendar event (a scheduled time block) on your Google
