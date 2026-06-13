@@ -44,6 +44,15 @@ import { clampDay } from "@/lib/bible";
 import { cn, todayKey } from "@/lib/utils";
 
 type Step = "intro" | "checkin" | "stretch" | "walk" | "read" | "complete";
+type CoreStep = "checkin" | "stretch" | "walk" | "read";
+
+const CORE: CoreStep[] = ["checkin", "stretch", "walk", "read"];
+const STEP_LABEL: Record<CoreStep, string> = {
+  checkin: "Check-in",
+  stretch: "Stretch",
+  walk: "Walk",
+  read: "Read",
+};
 
 // A soft suggested reading length — finishable early, extendable. Calm, not enforced.
 const READ_SEC = 12 * 60;
@@ -58,50 +67,125 @@ export default function RoutinePage() {
 
 function Ritual() {
   const router = useRouter();
-  const [step, setStep] = useState<Step>("intro");
+  const [phase, setPhase] = useState<"intro" | "running" | "complete">("intro");
+  // Remaining steps in order; skipping moves a step to the back so it resurfaces.
+  const [queue, setQueue] = useState<CoreStep[]>(CORE);
   const [startedAt, setStartedAt] = useState<number | null>(null);
   const [stretchSec, setStretchSec] = useState(0);
   const [walkSec, setWalkSec] = useState(0);
   const [steps, setSteps] = useState<number | undefined>(undefined);
 
+  const current = queue[0];
+
   const begin = () => {
     setStartedAt(Date.now());
-    setStep("checkin");
+    setPhase("running");
   };
+
+  // Finish a step → drop it; when none remain, the ritual is complete.
+  const advance = (s: CoreStep) => {
+    setQueue((q) => {
+      const rest = q.filter((x) => x !== s);
+      if (rest.length === 0) setPhase("complete");
+      return rest;
+    });
+  };
+
+  // Skip for now → send it to the back so we come back to it (skipping the last
+  // remaining step finishes the ritual, leaving that one for later today).
+  const skip = (s: CoreStep) => {
+    setQueue((q) => {
+      const rest = q.filter((x) => x !== s);
+      if (rest.length === 0) {
+        setPhase("complete");
+        return [];
+      }
+      return [...rest, s];
+    });
+  };
+
+  const skipped = queue.length > 1; // something has been pushed to the back
 
   return (
     <div>
       <PageHeader title="Morning Ritual" subtitle="6am → at the computer by 7am." back="/" />
-      {startedAt && step !== "intro" && <RitualPill startedAt={startedAt} step={step} />}
+      {startedAt && phase === "running" && current && <RitualPill startedAt={startedAt} step={current} />}
 
-      {step === "intro" && <Intro onStart={begin} />}
-      {step === "checkin" && <CheckinStep onDone={() => setStep("stretch")} />}
-      {step === "stretch" && (
+      {phase === "running" && current && (
+        <StepTracker queue={queue} onSkip={() => skip(current)} canSkip={queue.length > 1} />
+      )}
+
+      {phase === "intro" && <Intro onStart={begin} />}
+
+      {phase === "running" && current === "checkin" && <CheckinStep onDone={() => advance("checkin")} />}
+      {phase === "running" && current === "stretch" && (
         <StretchStep
           onDone={(sec) => {
             setStretchSec(sec);
-            setStep("walk");
+            advance("stretch");
           }}
         />
       )}
-      {step === "walk" && (
+      {phase === "running" && current === "walk" && (
         <WalkStep
           onDone={(sec, s) => {
             setWalkSec(sec);
             setSteps(s);
-            setStep("read");
+            advance("walk");
           }}
         />
       )}
-      {step === "read" && <ReadStep onDone={() => setStep("complete")} />}
-      {step === "complete" && (
+      {phase === "running" && current === "read" && <ReadStep onDone={() => advance("read")} />}
+
+      {phase === "complete" && (
         <CompleteStep
           totalSec={startedAt ? Math.round((Date.now() - startedAt) / 1000) : stretchSec + walkSec}
           stretchSec={stretchSec}
           walkSec={walkSec}
           steps={steps}
+          skippedCount={queue.length}
           onDone={() => router.push("/day")}
         />
+      )}
+    </div>
+  );
+}
+
+// Shows the remaining steps in order (current highlighted, later ones dimmed)
+// plus a calm "Skip for now" that re-queues the current step to the end.
+function StepTracker({
+  queue,
+  onSkip,
+  canSkip,
+}: {
+  queue: CoreStep[];
+  onSkip: () => void;
+  canSkip: boolean;
+}) {
+  return (
+    <div className="mb-4 flex items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center gap-1.5">
+        {queue.map((s, i) => (
+          <span
+            key={s}
+            className={cn(
+              "rounded-full border px-2.5 py-1 text-[11px]",
+              i === 0
+                ? "border-sage-500/50 bg-sage-500/10 text-sage-300"
+                : "border-ink-700 text-mist-500"
+            )}
+          >
+            {STEP_LABEL[s]}
+          </span>
+        ))}
+      </div>
+      {canSkip && (
+        <button
+          onClick={onSkip}
+          className="flex shrink-0 items-center gap-1 text-xs text-mist-500 hover:text-mist-200"
+        >
+          Skip for now <SkipForward className="h-3.5 w-3.5" />
+        </button>
       )}
     </div>
   );
@@ -471,12 +555,14 @@ function CompleteStep({
   stretchSec,
   walkSec,
   steps,
+  skippedCount = 0,
   onDone,
 }: {
   totalSec: number;
   stretchSec: number;
   walkSec: number;
   steps: number | undefined;
+  skippedCount?: number;
   onDone: () => void;
 }) {
   const { speak } = useSpeech();
@@ -532,6 +618,12 @@ function CompleteStep({
           <p className="flex items-center gap-1.5 text-sm text-mist-400">
             <Volume2 className="h-4 w-4 animate-pulse text-sky-400" /> your briefing is playing
           </p>
+          {skippedCount > 0 && (
+            <p className="text-xs text-ember-300/90">
+              You left {skippedCount} step{skippedCount === 1 ? "" : "s"} for later — no pressure, come
+              back anytime.
+            </p>
+          )}
         </CardContent>
       </Card>
 
