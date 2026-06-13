@@ -315,6 +315,11 @@ export interface JeremyState {
   // Supplements / meds in the nightly routine + an optional fasting window.
   supplements?: SupplementItem[];
   fastUntil?: string; // "HH:MM" — when the eating window opens
+  // Audio tab: last-used mode + selected preset per mode, and headphone notice.
+  audioMode?: "8d" | "binaural";
+  eightDPresetId?: number;
+  binauralPresetId?: number;
+  audioHeadphoneAck?: boolean;
   // Personal secret-address (.ics) Calendar feed URL, when set in-app.
   calendarIcsUrl?: string;
   // The Slack channel (id or name) that carries Cowork task briefs.
