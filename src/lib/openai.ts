@@ -8,11 +8,18 @@ interface ChatOpts {
   temperature?: number;
   max_tokens?: number;
   timeoutMs?: number;
+  tools?: unknown[]; // OpenAI tool/function definitions (optional)
+}
+
+export interface ToolCall {
+  name: string;
+  arguments: string; // raw JSON string of the call args
 }
 
 export interface ChatResult {
   ok: boolean;
   content?: string;
+  toolCalls?: ToolCall[];
   model?: string;
   usage?: { prompt_tokens?: number; completion_tokens?: number };
   error?: string;
@@ -40,6 +47,7 @@ export async function chatComplete(opts: ChatOpts): Promise<ChatResult> {
           messages: opts.messages,
           temperature: opts.temperature ?? 0.6,
           max_tokens: opts.max_tokens ?? 400,
+          ...(opts.tools?.length ? { tools: opts.tools } : {}),
         }),
         signal: ctrl.signal,
       });
@@ -48,9 +56,17 @@ export async function chatComplete(opts: ChatOpts): Promise<ChatResult> {
         continue; // try the next model
       }
       const data = await res.json();
-      const content = data.choices?.[0]?.message?.content?.trim();
-      if (!content) continue;
-      return { ok: true, content, model, usage: data.usage };
+      const msg = data.choices?.[0]?.message;
+      const content = msg?.content?.trim();
+      const toolCalls: ToolCall[] = (msg?.tool_calls ?? [])
+        .filter((c: { function?: { name?: string } }) => c.function?.name)
+        .map((c: { function: { name: string; arguments: string } }) => ({
+          name: c.function.name,
+          arguments: c.function.arguments ?? "{}",
+        }));
+      // A tool-call-only reply has no content — still a valid result.
+      if (!content && toolCalls.length === 0) continue;
+      return { ok: true, content, toolCalls: toolCalls.length ? toolCalls : undefined, model, usage: data.usage };
     } catch (err) {
       console.error("[openai] request failed", model, err);
     } finally {

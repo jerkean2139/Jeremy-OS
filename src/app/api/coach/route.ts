@@ -1,6 +1,54 @@
 import { NextRequest, NextResponse } from "next/server";
 import { PERSONAL_CREED } from "@/lib/codewords";
-import { chatComplete } from "@/lib/openai";
+import { chatComplete, type ToolCall } from "@/lib/openai";
+import { gcalConfigured } from "@/lib/gcal";
+
+// The one tool the live coach can call: propose a calendar block (the user
+// always confirms in the UI before anything is created).
+const SCHEDULE_TOOLS = [
+  {
+    type: "function",
+    function: {
+      name: "schedule_calendar_event",
+      description:
+        "Propose a time block to add to the user's Google Calendar. Call once per block. The user confirms before it is created — so propose freely once you know the what and when. Use the current date/time in the context to resolve relative times like 'tomorrow 9am'.",
+      parameters: {
+        type: "object",
+        properties: {
+          summary: { type: "string", description: "Short event title, e.g. 'Deep work — launch page'." },
+          start: { type: "string", description: "Local start datetime, ISO without timezone, e.g. 2026-06-14T09:00:00." },
+          end: { type: "string", description: "Local end datetime, ISO without timezone." },
+          notes: { type: "string", description: "Optional one-line description." },
+        },
+        required: ["summary", "start", "end"],
+      },
+    },
+  },
+];
+
+export interface ProposedEvent {
+  summary: string;
+  start: string;
+  end: string;
+  notes?: string;
+}
+
+function parseProposedEvents(calls?: ToolCall[]): ProposedEvent[] {
+  if (!calls?.length) return [];
+  const out: ProposedEvent[] = [];
+  for (const c of calls) {
+    if (c.name !== "schedule_calendar_event") continue;
+    try {
+      const a = JSON.parse(c.arguments);
+      if (a.summary && a.start && a.end) {
+        out.push({ summary: String(a.summary), start: String(a.start), end: String(a.end), notes: a.notes ? String(a.notes) : undefined });
+      }
+    } catch {
+      /* skip malformed */
+    }
+  }
+  return out;
+}
 
 export const runtime = "nodejs";
 
@@ -25,6 +73,14 @@ YOUR ROLE: coach, mirror, strategic advisor, and pattern detector.
 YOU ARE NOT a therapist. You never diagnose, never give medical advice, never use clinical labels.
 
 DAY AWARENESS: you may be given a "TODAY (live)" block with his CALENDAR, a SLACK triage, and COWORK BRIEFS (results from his scheduled AI tasks). When it's there, use it: help him see what the day actually holds, protect time for the mountain against the noise, flag an overloaded schedule, and when he asks to plan the day, turn the calendar + briefs into a concrete, prioritized plan with one clear first move. If a brief or message implies a task, you can suggest a specific time block for it.
+
+SCHEDULING (when the schedule_calendar_event tool is available): you can put blocks on his calendar. Behaviour:
+- When he tells you what to do and roughly when, CALL the tool to propose the block(s) — he confirms in the app before anything is created, so you don't need to ask permission to propose.
+- If the WHAT or WHEN is genuinely unclear, ask ONE crisp question first; don't propose vague blocks.
+- Plan around his existing calendar — never double-book a slot that's already taken; find open time.
+- Chunk intelligently: protect a real deep-work block (60–90 min) for the single biggest mountain item first, batch shallow/admin tasks together, keep a little breathing room between blocks, and respect his energy (hard things earlier). Offer better chunking when his ask is suboptimal, and say why in one line.
+- In the morning, if he asks you to plan/line up his day, propose a small ordered set of blocks for the biggest things that need to get done, mountain first.
+- Keep titles short and concrete. Resolve relative times ("tomorrow 9am") using the current date/time in the context.
 
 TONE: calm, direct, warm, like a trusted mentor — never a compliance officer. No guilt, no shame, no red-alert language. Only awareness and forward motion.
 
@@ -151,19 +207,36 @@ export async function POST(req: NextRequest) {
       messages.push({ role: "user", content: body.text });
     }
 
-    const result = await chatComplete({ messages, temperature: 0.7, max_tokens: 400 });
+    // Give the live chat the scheduling tool when calendar write is connected,
+    // so the coach can propose time blocks the user confirms.
+    const canSchedule = (!body.mode || body.mode === "chat") && gcalConfigured();
+    const result = await chatComplete({
+      messages,
+      temperature: 0.7,
+      max_tokens: 500,
+      tools: canSchedule ? SCHEDULE_TOOLS : undefined,
+    });
 
-    if (!result.ok || !result.content) {
+    if (!result.ok || (!result.content && !result.toolCalls?.length)) {
       return NextResponse.json({
         reply: appendCreed(body.mode, localEngine(body)),
         source: "local-fallback",
       });
     }
+
+    const proposedEvents = parseProposedEvents(result.toolCalls);
+    const reply =
+      result.content ||
+      (proposedEvents.length
+        ? "Here's what I'd put on your calendar — confirm and I'll add it:"
+        : localEngine(body));
+
     return NextResponse.json({
-      reply: appendCreed(body.mode, result.content),
+      reply: appendCreed(body.mode, reply),
       source: "openai",
       model: result.model,
       usage: result.usage,
+      proposedEvents,
     });
   } catch {
     return NextResponse.json({
