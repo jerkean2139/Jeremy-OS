@@ -51,7 +51,7 @@ export function CoworkBriefs({
   useEffect(() => {
     fetch("/api/calendar/create", { cache: "no-store" })
       .then((r) => r.json())
-      .then((d) => setCanSchedule(!!d.configured))
+      .then((d) => setCanSchedule(!!d.ok))
       .catch(() => {});
   }, []);
 

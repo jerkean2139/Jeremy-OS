@@ -26,10 +26,28 @@ function nextHalfHour(): string {
 
 const DURATIONS = [15, 30, 45, 60, 90];
 
+// Precise, calm guidance for each not-ready state.
+function hint(s: { configured: boolean; error?: string }): string {
+  if (!s.configured)
+    return "Connect Google Calendar write access to drop focused time blocks onto your calendar. Add the Google service-account vars on the server (see README), then this turns on.";
+  if (s.error === "auth_failed")
+    return "Google rejected the credentials — check GOOGLE_SERVICE_ACCOUNT_JSON (or the OAuth refresh token).";
+  if (s.error === "no_calendar_access")
+    return "Connected, but can't reach that calendar. Share your calendar with the service-account email (Make changes to events) and set GOOGLE_CALENDAR_ID to your Google email.";
+  if (s.error === "network") return "Couldn't reach Google just now — it'll retry.";
+  return "Calendar write isn't ready yet.";
+}
+
 // A composer to drop a focused time block onto your Google Calendar. Only shows
 // the form when write access is configured; otherwise a calm setup hint.
+interface Status {
+  configured: boolean;
+  ok: boolean;
+  error?: string;
+}
+
 export function ScheduleBlock({ initialTitle = "" }: { initialTitle?: string }) {
-  const [configured, setConfigured] = useState<boolean | null>(null);
+  const [status, setStatus] = useState<Status | null>(null);
   const [title, setTitle] = useState(initialTitle);
   const [time, setTime] = useState(nextHalfHour());
   const [duration, setDuration] = useState(30);
@@ -40,30 +58,29 @@ export function ScheduleBlock({ initialTitle = "" }: { initialTitle?: string }) 
   useEffect(() => {
     fetch("/api/calendar/create", { cache: "no-store" })
       .then((r) => r.json())
-      .then((d) => setConfigured(!!d.configured))
-      .catch(() => setConfigured(false));
+      .then((d) => setStatus({ configured: !!d.configured, ok: !!d.ok, error: d.error }))
+      .catch(() => setStatus({ configured: false, ok: false }));
   }, []);
 
   useEffect(() => {
     if (initialTitle) setTitle(initialTitle);
   }, [initialTitle]);
 
-  if (configured === false) {
+  if (status === null) return null;
+
+  // Not connected, or connected-but-broken → a precise hint instead of the form.
+  if (!status.ok) {
     return (
       <Card>
         <CardContent className="space-y-1 pt-5">
           <div className="flex items-center gap-2 text-sm font-medium text-mist-100">
             <CalendarPlus className="h-4 w-4 text-sky-300" /> Schedule a block
           </div>
-          <p className="text-xs leading-relaxed text-mist-500">
-            Connect Google Calendar write access to drop focused time blocks straight onto your
-            calendar. Add the Google env vars on the server (see README), then this turns on.
-          </p>
+          <p className="text-xs leading-relaxed text-mist-500">{hint(status)}</p>
         </CardContent>
       </Card>
     );
   }
-  if (configured === null) return null;
 
   const schedule = async () => {
     if (!title.trim() || busy) return;

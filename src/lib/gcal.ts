@@ -172,3 +172,36 @@ export async function createCalendarEvent(input: CreateEventInput): Promise<Crea
     return { ok: false, error: "network" };
   }
 }
+
+export interface GcalStatus {
+  configured: boolean;
+  ok: boolean; // auth works AND the target calendar is reachable/writable
+  method?: "service_account" | "oauth";
+  calendarId?: string;
+  error?: "auth_failed" | "no_calendar_access" | "network" | string;
+}
+
+// End-to-end health check so the UI can confirm setup or name the exact gap:
+// not configured → bad key/token → calendar not shared / wrong id → ready.
+export async function diagnoseGcal(): Promise<GcalStatus> {
+  if (!gcalConfigured()) return { configured: false, ok: false };
+  const method = hasServiceAccount() ? "service_account" : "oauth";
+  const id = calendarId();
+
+  const token = await getAccessToken();
+  if (!token) return { configured: true, ok: false, method, calendarId: id, error: "auth_failed" };
+
+  try {
+    const res = await fetch(`${API}/calendars/${encodeURIComponent(id)}`, {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+    });
+    if (res.ok) return { configured: true, ok: true, method, calendarId: id };
+    if (res.status === 403 || res.status === 404) {
+      return { configured: true, ok: false, method, calendarId: id, error: "no_calendar_access" };
+    }
+    return { configured: true, ok: false, method, calendarId: id, error: `http_${res.status}` };
+  } catch {
+    return { configured: true, ok: false, method, calendarId: id, error: "network" };
+  }
+}
