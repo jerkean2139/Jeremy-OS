@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { VoiceChat } from "@/components/VoiceChat";
 import { DayDebrief } from "@/components/DayDebrief";
+import { ScheduleBlock } from "@/components/ScheduleBlock";
 import { useStore } from "@/lib/store";
 import {
   fmtRange,
@@ -162,6 +163,11 @@ function Day() {
               ))}
             </div>
           )}
+
+          {/* Drop a focused time block onto Google Calendar */}
+          <div className="mb-5">
+            <ScheduleBlock />
+          </div>
 
           <div className="mb-2 text-[11px] font-medium uppercase tracking-[0.16em] text-mist-500">
             Talk through the day
