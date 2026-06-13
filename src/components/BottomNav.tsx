@@ -2,18 +2,32 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Timer, BarChart3, MessageCircle, Mountain, Search, CalendarCheck, Headphones } from "lucide-react";
+import { Home, Timer, MessageCircle, Headphones, LayoutGrid } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const items = [
   { href: "/", label: "Today", icon: Home },
   { href: "/pulse", label: "Pulse", icon: Timer },
   { href: "/audio", label: "Audio", icon: Headphones },
-  { href: "/manumation", label: "Summit", icon: Mountain },
-  { href: "/analytics", label: "Patterns", icon: BarChart3 },
   { href: "/coach", label: "Coach", icon: MessageCircle },
-  { href: "/search", label: "Search", icon: Search },
-  { href: "/review", label: "Review", icon: CalendarCheck },
+  { href: "/more", label: "More", icon: LayoutGrid },
+];
+
+// Pages that live inside the "More" hub — keep that tab lit while you're there.
+const MORE_ROUTES = [
+  "/more",
+  "/manumation",
+  "/analytics",
+  "/review",
+  "/search",
+  "/scripture",
+  "/movement",
+  "/habits",
+  "/scorecard",
+  "/reminders",
+  "/backup",
+  "/usage",
+  "/day",
 ];
 
 export function BottomNav() {
@@ -24,7 +38,12 @@ export function BottomNav() {
     <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-ink-700/60 bg-ink-900/90 backdrop-blur-md">
       <div className="mx-auto flex max-w-lg items-stretch justify-around px-1 pb-[env(safe-area-inset-bottom)]">
         {items.map(({ href, label, icon: Icon }) => {
-          const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
+          const active =
+            href === "/"
+              ? pathname === "/"
+              : href === "/more"
+              ? MORE_ROUTES.some((r) => pathname.startsWith(r))
+              : pathname.startsWith(href);
           return (
             <Link
               key={href}
