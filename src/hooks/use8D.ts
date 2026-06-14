@@ -35,6 +35,17 @@ export function use8D() {
     [engine]
   );
 
+  // Load a built-in soundbed preset (generated audio — nothing to upload).
+  const loadBed = useCallback(
+    (p: EightDPreset) => {
+      setError(null);
+      engine().setBed(p);
+      setHasSource(true);
+      setSpeedState(p.orbit);
+    },
+    [engine]
+  );
+
   const play = useCallback(async () => {
     setError(null);
     await engine().play();
@@ -76,5 +87,5 @@ export function use8D() {
 
   useEffect(() => () => ref.current?.destroy(), []);
 
-  return { playing, hasSource, error, speed, load, play, pause, stop, applyPreset, setSpeed, setSpread, setReverb, getAngle };
+  return { playing, hasSource, error, speed, load, loadBed, play, pause, stop, applyPreset, setSpeed, setSpread, setReverb, getAngle };
 }
