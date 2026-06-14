@@ -10,6 +10,7 @@
 // (uploads, your own CORS-enabled URLs) — never DRM streams.
 
 import { getAudioContext, resumeAudio, makeImpulseResponse } from "./context";
+import type { EightDPreset } from "./presets";
 
 export class EightDEngine {
   private ctx: AudioContext;
@@ -29,6 +30,13 @@ export class EightDEngine {
   private lastTs: number | null = null;
   private _playing = false;
   private _hasSource = false;
+
+  // Generated soundbed (built-in preset audio — no file needed).
+  private mode: "media" | "bed" = "media";
+  private bedSpec: EightDPreset | null = null;
+  private bedNodes: AudioNode[] = [];
+  private bedGain: GainNode | null = null;
+  private noiseBuf: AudioBuffer | null = null;
 
   onError?: (message: string) => void;
   onEnded?: () => void;
@@ -89,9 +97,124 @@ export class EightDEngine {
     return this.secondsPerTurn;
   }
 
+  // Select a built-in soundbed preset — a generated ambient texture that plays
+  // for as long as you like with nothing to load.
+  setBed(spec: EightDPreset) {
+    const wasBedPlaying = this._playing && this.mode === "bed";
+    this.mode = "bed";
+    this.bedSpec = spec;
+    this._hasSource = true;
+    this.setSpeed(spec.orbit);
+    this.setSpread(spec.spread);
+    this.setReverb(spec.reverb);
+    if (wasBedPlaying) {
+      this.teardownBed();
+      this.buildBed();
+    }
+  }
+
+  private noiseBuffer(): AudioBuffer {
+    if (this.noiseBuf) return this.noiseBuf;
+    const len = this.ctx.sampleRate * 3;
+    const buf = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    let last = 0;
+    for (let i = 0; i < len; i++) {
+      const white = Math.random() * 2 - 1;
+      last = (last + 0.02 * white) / 1.02; // brown-ish: soft, airy, non-fatiguing
+      d[i] = last * 3.2;
+    }
+    this.noiseBuf = buf;
+    return buf;
+  }
+
+  private buildBed() {
+    if (!this.bedSpec || this.bedGain) return;
+    const ctx = this.ctx;
+    const s = this.bedSpec;
+    const bedGain = ctx.createGain();
+    bedGain.gain.value = 0;
+
+    // Air layer: looping brown noise through a lowpass (its "color").
+    const noise = ctx.createBufferSource();
+    noise.buffer = this.noiseBuffer();
+    noise.loop = true;
+    const nf = ctx.createBiquadFilter();
+    nf.type = "lowpass";
+    nf.frequency.value = s.noiseCut;
+    const ng = ctx.createGain();
+    ng.gain.value = s.noiseLevel;
+    noise.connect(nf).connect(ng).connect(bedGain);
+    noise.start();
+
+    // Pad layer: soft root/fifth/octave chord through a slowly-drifting lowpass.
+    const pf = ctx.createBiquadFilter();
+    pf.type = "lowpass";
+    pf.frequency.value = s.root * 6;
+    pf.Q.value = 3;
+    const pg = ctx.createGain();
+    pg.gain.value = s.padLevel;
+    pf.connect(pg).connect(bedGain);
+    const oscs = [1, 1.5, 2].map((r, i) => {
+      const o = ctx.createOscillator();
+      o.type = s.wave;
+      o.frequency.value = s.root * r;
+      o.detune.value = (i - 1) * 5; // gentle chorus
+      const g = ctx.createGain();
+      g.gain.value = i === 0 ? 0.5 : 0.28;
+      o.connect(g).connect(pf);
+      o.start();
+      return o;
+    });
+
+    // Slow LFO drifts the pad filter so the texture breathes.
+    const lfo = ctx.createOscillator();
+    lfo.frequency.value = s.lfo;
+    const lg = ctx.createGain();
+    lg.gain.value = s.root * 2.5;
+    lfo.connect(lg).connect(pf.frequency);
+    lfo.start();
+
+    bedGain.connect(this.centerGain);
+    bedGain.connect(this.panGain);
+    bedGain.gain.setTargetAtTime(0.85, ctx.currentTime, 1.2); // gentle fade-in
+
+    this.bedGain = bedGain;
+    this.bedNodes = [noise, ...oscs, lfo];
+  }
+
+  private teardownBed() {
+    const bedGain = this.bedGain;
+    const nodes = this.bedNodes;
+    this.bedGain = null;
+    this.bedNodes = [];
+    if (bedGain) bedGain.gain.setTargetAtTime(0, this.ctx.currentTime, 0.25);
+    window.setTimeout(() => {
+      for (const n of nodes) {
+        try {
+          (n as OscillatorNode).stop?.();
+        } catch {
+          /* already stopped */
+        }
+        try {
+          n.disconnect();
+        } catch {
+          /* ignore */
+        }
+      }
+      try {
+        bedGain?.disconnect();
+      } catch {
+        /* ignore */
+      }
+    }, 350);
+  }
+
   // Load a File (upload) or a CORS-enabled remote URL.
   setSource(src: File | string) {
     this.stopLoop();
+    this.mode = "media";
+    if (this.bedGain) this.teardownBed();
     this._playing = false;
     if (typeof src === "string") {
       this.audio.crossOrigin = "anonymous";
@@ -107,6 +230,13 @@ export class EightDEngine {
   async play() {
     if (!this._hasSource) return;
     await resumeAudio();
+    if (this.mode === "bed") {
+      if (!this.bedGain) this.buildBed();
+      this._playing = true;
+      this.lastTs = null;
+      this.startLoop();
+      return;
+    }
     try {
       await this.audio.play();
     } catch {
@@ -119,6 +249,12 @@ export class EightDEngine {
   }
 
   pause() {
+    if (this.mode === "bed") {
+      this.teardownBed();
+      this._playing = false;
+      this.stopLoop();
+      return;
+    }
     this.audio.pause();
     this._playing = false;
     this.stopLoop();
@@ -172,6 +308,7 @@ export class EightDEngine {
 
   destroy() {
     this.pause();
+    this.teardownBed();
     try {
       this.audio.src = "";
     } catch {
