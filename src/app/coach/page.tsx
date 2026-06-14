@@ -50,6 +50,7 @@ function Coach() {
   const coachMemory = useStore((s) => s.coachMemory);
   const addCoachMemory = useStore((s) => s.addCoachMemory);
   const removeCoachMemory = useStore((s) => s.removeCoachMemory);
+  const calendarIcsUrl = useStore((s) => s.calendarIcsUrl);
 
   const [input, setInput] = useState("");
   const [thinking, setThinking] = useState(false);
@@ -84,8 +85,8 @@ function Coach() {
   }, [history, thinking]);
 
   useEffect(() => {
-    fetchDayContext().then(setDayContext).catch(() => {});
-  }, []);
+    fetchDayContext(calendarIcsUrl).then(setDayContext).catch(() => {});
+  }, [calendarIcsUrl]);
 
   const buildContext = () => {
     const base = buildCoachContext({

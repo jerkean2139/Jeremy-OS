@@ -165,28 +165,30 @@ function Day() {
             </div>
           )}
 
-          {/* Plan tasks into today's fixed calendar blocks */}
-          <DayPlanner date={todayKey()} events={events} />
-
-          {/* Drop a focused time block onto Google Calendar */}
-          <div className="mb-5">
-            <ScheduleBlock />
-          </div>
-
-          <div className="mb-2 text-[11px] font-medium uppercase tracking-[0.16em] text-mist-500">
-            Talk through the day
-          </div>
-          <VoiceChat
-            context={context}
-            memory={memory}
-            opener={
-              yesterday.length
-                ? "Morning. Before we plan today — how did yesterday actually go? Walk me through how the meetings and tasks landed, then we'll look at today against your mountain."
-                : "Let's look at your day. Walk me through what's on the calendar and what matters most — I'll help you compare it to your mountain and the noise."
-            }
-          />
         </>
       )}
+
+      {/* Plan tasks into the day's fixed blocks — always available; the blocks
+          fill in once a calendar is connected. */}
+      <DayPlanner date={todayKey()} events={events} />
+
+      {/* Drop a focused time block onto Google Calendar */}
+      <div className="mb-5">
+        <ScheduleBlock />
+      </div>
+
+      <div className="mb-2 text-[11px] font-medium uppercase tracking-[0.16em] text-mist-500">
+        Talk through the day
+      </div>
+      <VoiceChat
+        context={context}
+        memory={memory}
+        opener={
+          yesterday.length
+            ? "Morning. Before we plan today — how did yesterday actually go? Walk me through how the meetings and tasks landed, then we'll look at today against your mountain."
+            : "Let's look at your day. Walk me through what's on the calendar and what matters most — I'll help you compare it to your mountain and the noise."
+        }
+      />
     </div>
   );
 }

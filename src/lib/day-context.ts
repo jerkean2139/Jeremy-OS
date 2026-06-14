@@ -7,11 +7,16 @@ import { fmtRange, type CalEvent } from "./calendar";
 import type { CalendarResponse } from "@/app/api/calendar/route";
 import type { SlackBriefingData, CoworkData } from "./slack";
 
-export async function fetchDayContext(): Promise<string> {
+export async function fetchDayContext(icsUrl?: string): Promise<string> {
   const parts: string[] = [];
 
   const [cal, slack, cowork] = await Promise.all([
-    safe<CalendarResponse>("/api/calendar"),
+    // /api/calendar is POST — it takes the ICS URL in the body (falls back to
+    // the CALENDAR_ICS_URL env on the server).
+    safe<CalendarResponse>("/api/calendar", {
+      method: "POST",
+      body: JSON.stringify({ icsUrl: icsUrl || undefined }),
+    }),
     safe<SlackBriefingData>("/api/slack"),
     safe<CoworkData>("/api/cowork"),
   ]);
@@ -46,9 +51,17 @@ export async function fetchDayContext(): Promise<string> {
   return parts.join("\n\n");
 }
 
-async function safe<T>(url: string): Promise<T | null> {
+async function safe<T>(
+  url: string,
+  init?: { method?: string; body?: string }
+): Promise<T | null> {
   try {
-    const res = await fetch(url, { cache: "no-store" });
+    const res = await fetch(url, {
+      cache: "no-store",
+      method: init?.method ?? "GET",
+      headers: init?.body ? { "Content-Type": "application/json" } : undefined,
+      body: init?.body,
+    });
     if (!res.ok) return null;
     return (await res.json()) as T;
   } catch {
